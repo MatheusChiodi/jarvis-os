@@ -1,0 +1,53 @@
+{
+  "name": "@jarvis-os/video",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Video generation layer with HyperFrames and Remotion integration",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./hyperframes": {
+      "types": "./dist/hyperframes/index.d.ts",
+      "import": "./dist/hyperframes/index.js",
+      "default": "./dist/hyperframes/index.js"
+    },
+    "./remotion": {
+      "types": "./dist/remotion/index.d.ts",
+      "import": "./dist/remotion/index.js",
+      "default": "./dist/remotion/index.js"
+    },
+    "./frame-md": {
+      "types": "./dist/frame-md/index.d.ts",
+      "import": "./dist/frame-md/index.js",
+      "default": "./dist/frame-md/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.build.json",
+    "dev": "tsc -w",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@jarvis-os/core": "workspace:*",
+    "@jarvis-os/tsconfig": "workspace:*",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

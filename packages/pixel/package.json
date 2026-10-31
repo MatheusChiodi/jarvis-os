@@ -1,0 +1,49 @@
+{
+  "name": "@jarvis-os/pixel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pixel Agents visualizer integration",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js",
+      "default": "./dist/client/index.js"
+    },
+    "./visualizer": {
+      "types": "./dist/visualizer/index.d.ts",
+      "import": "./dist/visualizer/index.js",
+      "default": "./dist/visualizer/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.build.json",
+    "dev": "tsc -w",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@jarvis-os/core": "workspace:*",
+    "@jarvis-os/tsconfig": "workspace:*",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "ws": "^8.17.0",
+    "zod": "^3.23.8"
+  }
+}

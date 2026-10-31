@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "@jarvis-os/core/*": ["packages/core/src/*"],
+      "@jarvis-os/memory/*": ["packages/memory/src/*"],
+      "@jarvis-os/runtime/*": ["packages/runtime/src/*"],
+      "@jarvis-os/skills/*": ["packages/skills/src/*"],
+      "@jarvis-os/voice/*": ["packages/voice/src/*"],
+      "@jarvis-os/video/*": ["packages/video/src/*"],
+      "@jarvis-os/pixel/*": ["packages/pixel/src/*"],
+      "@jarvis-os/trading/*": ["packages/trading/src/*"],
+      "@jarvis-os/ui-kit/*": ["packages/ui-kit/src/*"]
+    },
+    "types": ["node", "vitest/globals", "@tauri-apps/api"]
+  },
+  "exclude": ["node_modules", "dist", "build", ".turbo"]
+}

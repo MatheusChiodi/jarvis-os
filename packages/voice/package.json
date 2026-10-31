@@ -1,0 +1,59 @@
+{
+  "name": "@jarvis-os/voice",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Voice layer with wake word detection, STT, TTS, and teleprompter",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./wake-word": {
+      "types": "./dist/wake-word/index.d.ts",
+      "import": "./dist/wake-word/index.js",
+      "default": "./dist/wake-word/index.js"
+    },
+    "./stt": {
+      "types": "./dist/stt/index.d.ts",
+      "import": "./dist/stt/index.js",
+      "default": "./dist/stt/index.js"
+    },
+    "./tts": {
+      "types": "./dist/tts/index.d.ts",
+      "import": "./dist/tts/index.js",
+      "default": "./dist/tts/index.js"
+    },
+    "./teleprompter": {
+      "types": "./dist/teleprompter/index.d.ts",
+      "import": "./dist/teleprompter/index.js",
+      "default": "./dist/teleprompter/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.build.json",
+    "dev": "tsc -w",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@jarvis-os/core": "workspace:*",
+    "@jarvis-os/tsconfig": "workspace:*",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "@ricky0123/vad-web": "^0.0.20",
+    "zod": "^3.23.8"
+  }
+}

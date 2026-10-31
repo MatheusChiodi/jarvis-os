@@ -1,0 +1,52 @@
+{
+  "name": "@jarvis-os/skills",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Skills registry with lazy loading, namespaces, and built-in skills from ECC, mattpocock, and superpowers",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./registry": {
+      "types": "./dist/registry/index.d.ts",
+      "import": "./dist/registry/index.js",
+      "default": "./dist/registry/index.js"
+    },
+    "./builtin": {
+      "types": "./dist/builtin/index.d.ts",
+      "import": "./dist/builtin/index.js",
+      "default": "./dist/builtin/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.build.json",
+    "dev": "tsc -w",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "sync:builtin": "node scripts/sync-builtin-skills.js"
+  },
+  "devDependencies": {
+    "@jarvis-os/core": "workspace:*",
+    "@jarvis-os/tsconfig": "workspace:*",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4",
+    "fast-glob": "^3.3.2",
+    "js-yaml": "^4.1.0"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "zod": "^3.23.8"
+  }
+}

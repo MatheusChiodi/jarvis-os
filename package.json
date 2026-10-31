@@ -1,0 +1,65 @@
+{
+  "name": "jarvis-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JARVIS-OS: Local-first agent operating system with floating button, multi-team management, persistent memory, and specialized capabilities",
+  "author": "Matheus Chiodi (MCHIODI)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MatheusChiodi/jarvis-os.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MatheusChiodi/jarvis-os/issues"
+  },
+  "homepage": "https://github.com/MatheusChiodi/jarvis-os#readme",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "turbo run build",
+    "build:desktop": "turbo run build --filter=@jarvis-os/desktop",
+    "build:packages": "turbo run build --filter=@jarvis-os/* --filter=!@jarvis-os/desktop --filter=!@jarvis-os/cli",
+    "dev": "turbo run dev --filter=@jarvis-os/desktop",
+    "dev:packages": "turbo run dev --filter=@jarvis-os/* --filter=!@jarvis-os/desktop --filter=!@jarvis-os/cli",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:e2e": "turbo run test:e2e",
+    "test:coverage": "turbo run test:coverage",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "typecheck": "turbo run typecheck",
+    "typecheck:all": "tsc --noEmit --project tsconfig.base.json",
+    "changeset": "changeset",
+    "version": "changeset version && pnpm install",
+    "release": "changeset publish",
+    "clean": "turbo run clean && rm -rf node_modules .turbo dist",
+    "postinstall": "pnpm exec simple-git-hooks"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.27.11",
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^22.9.0",
+    "simple-git-hooks": "^2.11.1",
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm exec lint-staged",
+    "commit-msg": "pnpm exec commitlint --edit $1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
