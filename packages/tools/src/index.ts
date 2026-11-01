@@ -51,49 +51,15 @@ const SAFE_COMMANDS = [
   'pnpm typecheck',
 ];
 
-const DANGEROUS_PATTERNS = [
-  'rm -rf',
-  'rm -r',
-  'Remove-Item',
-  'del /',
-  'rd /s',
-  'format',
-  'shutdown',
-  'reg ',
-  'git push',
-  'git reset --hard',
-  'git clean',
-  'curl',
-  '| sh',
-  'iwr',
-  '| iex',
-  'Invoke-Expression',
-  'npm publish',
-  'pnpm publish',
-];
-
-const SENSITIVE_FILE_PATTERNS = [
-  '.env',
-  '.pem',
-  '.key',
-  'id_rsa',
-  'id_ed25519',
-  '.jarvis-os/daemon.token',
-  '.ssh/',
-];
+const SHELL_OPERATORS = /[;&|]|\$\s*\(|`|>|</;
 
 function isSafeCommand(cmd: string): boolean {
   const trimmed = cmd.trim();
   return SAFE_COMMANDS.some((safe) => trimmed.startsWith(safe));
 }
 
-function isDangerousCommand(cmd: string): boolean {
-  const trimmed = cmd.trim().toLowerCase();
-  return DANGEROUS_PATTERNS.some((pattern) => trimmed.includes(pattern.toLowerCase()));
-}
-
 function hasShellOperators(cmd: string): boolean {
-  return /[;&|]|\$\s*\(/.test(cmd);
+  return SHELL_OPERATORS.test(cmd);
 }
 
 function splitCommands(cmd: string): string[] {
@@ -108,10 +74,10 @@ function classifyShellCommand(cmd: string): ToolRisk {
   let maxRisk: ToolRisk = 'safe';
 
   for (const segment of segments) {
-    if (isDangerousCommand(segment)) {
+    if (hasShellOperators(segment)) {
       return 'dangerous';
     }
-    if (hasShellOperators(segment) || !isSafeCommand(segment)) {
+    if (!isSafeCommand(segment)) {
       maxRisk = 'dangerous';
     }
   }
@@ -133,13 +99,23 @@ export function resolveWorkspacePath(path: string, workspaces: string[]): string
   for (const ws of workspaces) {
     const wsResolved = realpathSync(ws);
     const rel = relative(wsResolved, resolved);
-    if (!rel.startsWith('..') && rel !== '') {
+    if (!rel.startsWith('..')) {
       return resolved;
     }
   }
 
   throw new Error(`Path ${path} is outside all allowed workspaces`);
 }
+
+const SENSITIVE_FILE_PATTERNS = [
+  '.env',
+  '.pem',
+  '.key',
+  'id_rsa',
+  'id_ed25519',
+  '.jarvis-os/daemon.token',
+  '.ssh/',
+];
 
 function isSensitivePath(path: string): boolean {
   const normalized = path.replace(/\\/g, '/');
