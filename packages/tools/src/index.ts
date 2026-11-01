@@ -1,9 +1,10 @@
 import { type ChildProcess, spawn } from 'node:child_process';
-import { existsSync, realpathSync } from 'node:fs';
+import { existsSync, realpathSync, mkdirSync, appendFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { type Vault, listNotes as ftsSearch, saveNote } from '@jarvis-os/memory';
 import type { ProgressiveDisclosure, VectorIndex } from '@jarvis-os/memory';
 import type { Tool, ToolRisk } from '@jarvis-os/protocol';
+import { randomUUID } from 'node:crypto';
 import pino from 'pino';
 
 const logger = pino({ name: 'tools' });
@@ -157,9 +158,9 @@ function writeAuditEntry(entry: AuditEntry): void {
   try {
     const dir = resolve(auditLogPath, '..');
     if (!existsSync(dir)) {
-      require('node:fs').mkdirSync(dir, { recursive: true });
+      mkdirSync(dir, { recursive: true });
     }
-    require('node:fs').appendFileSync(auditLogPath, `${JSON.stringify(entry)}\n`);
+    appendFileSync(auditLogPath, `${JSON.stringify(entry)}\n`);
   } catch (error) {
     logger.error({ error }, 'Failed to write audit log');
   }
@@ -456,7 +457,7 @@ export async function executeTool(
 
         const note = await saveNote(context.vault, {
           frontmatter: {
-            id: crypto.randomUUID(),
+            id: randomUUID(),
             type: args.type as any,
             title: args.title as string,
             summary: (args.content as string).slice(0, 200),
