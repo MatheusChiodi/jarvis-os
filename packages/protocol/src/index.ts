@@ -132,7 +132,7 @@ export const ToolStartedSchema = z.object({
   type: z.literal('tool.started'),
   callId: z.string(),
   tool: z.string(),
-  args: z.record(z.unknown()),
+  args: z.record(z.string(), z.unknown()),
   risk: ToolRiskSchema,
   ts: z.string(),
   sessionId: z.string(),
@@ -152,7 +152,7 @@ export const ApprovalRequestedSchema = z.object({
   type: z.literal('approval.requested'),
   approvalId: z.string(),
   tool: z.string(),
-  args: z.record(z.unknown()),
+  args: z.record(z.string(), z.unknown()),
   reason: z.string(),
   ts: z.string(),
   sessionId: z.string(),
@@ -254,7 +254,7 @@ export const ProviderConfigSchema = z.object({
 });
 
 export const DaemonConfigSchema = z.object({
-  host: z.string().ip(),
+  host: z.string().regex(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/),
   port: z.number().int().min(1).max(65535),
 });
 
@@ -329,7 +329,7 @@ export const ToolSchema = z.object({
   description: z.string(),
   parameters: z.object({
     type: z.literal('object'),
-    properties: z.record(z.unknown()),
+    properties: z.record(z.string(), z.unknown()),
     required: z.array(z.string()).optional(),
   }),
 });
