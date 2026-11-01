@@ -5,7 +5,7 @@
   "description": "Tauri desktop app with floating button and overlay",
   "type": "module",
   "scripts": {
-    "build": "tauri build",
+    "build": "vite build && tauri build",
     "dev": "tauri dev",
     "build:frontend": "vite build",
     "preview": "vite preview",
@@ -24,11 +24,8 @@
     "@jarvis-os/memory": "workspace:*",
     "@jarvis-os/runtime": "workspace:*",
     "@jarvis-os/skills": "workspace:*",
-    "@jarvis-os/voice": "workspace:*",
-    "@jarvis-os/video": "workspace:*",
     "@jarvis-os/pixel": "workspace:*",
     "@jarvis-os/ui-kit": "workspace:*",
-    "@jarvis-os/tsconfig": "workspace:*",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/cli": "^2.0.0",
     "@types/react": "^18.3.0",
@@ -49,10 +46,11 @@
     "immer": "^10.1.0",
     "tailwind-merge": "^2.5.0",
     "clsx": "^2.1.0",
-    "lucide-react": "^0.450.0",
+    "lucide-react": "^0.475.0",
     "zod": "^3.23.8",
     "@xterm/xterm": "^5.5.0",
     "@xterm/addon-fit": "^0.10.0",
-    "@xterm/addon-web-links": "^0.11.0"
+    "@xterm/addon-web-links": "^0.11.0",
+    "@tauri-apps/plugin-store": "^2.0.0"
   }
 }

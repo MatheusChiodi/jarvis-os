@@ -52,7 +52,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+      "include": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -62,7 +62,7 @@
       }
     },
     {
-      "includes": ["**/*.config.*", "**/turbo.json", "**/tsconfig*.json"],
+      "include": ["**/*.config.*", "**/turbo.json", "**/tsconfig*.json"],
       "linter": {
         "rules": {
           "suspicious": {

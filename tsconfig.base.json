@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2024",
+    "target": "ES2022",
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -25,10 +25,7 @@
       "@jarvis-os/memory/*": ["packages/memory/src/*"],
       "@jarvis-os/runtime/*": ["packages/runtime/src/*"],
       "@jarvis-os/skills/*": ["packages/skills/src/*"],
-      "@jarvis-os/voice/*": ["packages/voice/src/*"],
-      "@jarvis-os/video/*": ["packages/video/src/*"],
       "@jarvis-os/pixel/*": ["packages/pixel/src/*"],
-      "@jarvis-os/trading/*": ["packages/trading/src/*"],
       "@jarvis-os/ui-kit/*": ["packages/ui-kit/src/*"]
     },
     "types": ["node", "vitest/globals", "@tauri-apps/api"]

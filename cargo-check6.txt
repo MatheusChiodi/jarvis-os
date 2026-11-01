@@ -1,0 +1,74 @@
+﻿cargo :     Checking jarvis-os v0.1.0 (D:\VibeCode\jarvis-os\apps\desktop\src-tauri)
+No linha:1 caractere:51
++ ... \VibeCode\jarvis-os\apps\desktop\src-tauri ; cargo check 2>&1 | Out-F ...
++                                                  ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking ja...ktop\src-tauri):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `std::str::FromStr`
+ --> src\main.rs:4:5
+  |
+4 | use std::str::FromStr;
+  |     ^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0593]: closure is expected to take 3 arguments, but it takes 2 arguments
+   --> src\main.rs:233:30
+    |
+233 |     handle.global_shortcut().on_shortcut(shortcut, move |_shortcut, event| {
+    |                              ^^^^^^^^^^^           ----------------------- takes 2 arguments
+    |                              |
+    |                              expected closure that takes 3 arguments
+
+error[E0308]: `?` operator has incompatible types
+   --> src\main.rs:298:39
+    |
+298 |     let config_value: Option<Value> = store.get("config")?;
+    |                                       ^^^^^^^^^^^^^^^^^^^^ expected `Option<Value>`, found `Value`
+    |
+    = note: `?` operator cannot convert from `JsonValue` to `std::option::Option<JsonValue>`
+    = note: expected enum `std::option::Option<JsonValue>`
+               found enum `JsonValue`
+help: try removing this `?`
+    |
+298 -     let config_value: Option<Value> = store.get("config")?;
+298 +     let config_value: Option<Value> = store.get("config");
+    |
+help: try wrapping the expression in `Some`
+    |
+298 |     let config_value: Option<Value> = Some(store.get("config")?);
+    |                                       +++++                    +
+
+error[E0277]: the `?` operator can only be used on `Result`s, not `Option`s, in a function that returns `Result`
+   --> src\main.rs:298:58
+    |
+296 | fn load_config(handle: &tauri::AppHandle) -> Result<AppConfig, Box<dyn std::error::Error>> {
+    | ------------------------------------------------------------------------------------------ this function returns 
+a `Result`
+297 |     let store = handle.store("config.json")?;
+298 |     let config_value: Option<Value> = store.get("config")?;
+    |                                                          ^ use `.ok_or(...)?` to provide an error compatible 
+with `Result<AppConfig, Box<dyn StdError>>`
+
+error[E0308]: mismatched types
+   --> src\main.rs:328:47
+    |
+328 |                         key = Some(Code::from(c).ok_or("Invalid key")?);
+    |                                    ---------- ^ expected `Code`, found `char`
+    |                                    |
+    |                                    arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> /rustc/59807616e1fa2540724bfbac14d7976d7e4a3860/library\core\src\convert\mod.rs:592:7
+
+error[E0599]: no method named `ok_or` found for enum `Code` in the current scope
+   --> src\main.rs:328:50
+    |
+328 |                         key = Some(Code::from(c).ok_or("Invalid key")?);
+    |                                                  ^^^^^ method not found in `Code`
+
+Some errors have detailed explanations: E0277, E0308, E0593, E0599.
+For more information about an error, try `rustc --explain E0277`.
+warning: `jarvis-os` (bin "jarvis-os") generated 1 warning
+error: could not compile `jarvis-os` (bin "jarvis-os") due to 5 previous errors; 1 warning emitted

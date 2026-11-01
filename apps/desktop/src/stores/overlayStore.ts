@@ -34,8 +34,8 @@ export const useOverlayStore = create<OverlayStore>()(
       initialize: async () => {
         // Load persisted bounds from Tauri store if available
         try {
-          const { get } = await import('@tauri-apps/plugin-store');
-          const store = await get('config.json');
+          const { Store } = await import('@tauri-apps/plugin-store');
+          const store = await Store.load('config.json');
           const savedBounds = await store.get('overlayBounds');
           if (savedBounds) {
             set((state) => { state.bounds = { ...defaultBounds, ...savedBounds }; });

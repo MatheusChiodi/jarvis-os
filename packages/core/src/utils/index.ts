@@ -1,12 +1,21 @@
 import { z } from 'zod';
-import type { NoteFrontmatter, NoteType, AgentRoleType } from './types';
+import type { NoteFrontmatter } from '../types/index.js';
 
 // ============================================================================
 // ZOD SCHEMAS
 // ============================================================================
 
 export const NoteTypeSchema = z.enum(['memory', 'decision', 'learning', 'communication', 'state']);
-export const AgentRoleTypeSchema = z.enum(['planner', 'architect', 'coder', 'reviewer', 'tester', 'researcher', 'docs', 'custom']);
+export const AgentRoleTypeSchema = z.enum([
+  'planner',
+  'architect',
+  'coder',
+  'reviewer',
+  'tester',
+  'researcher',
+  'docs',
+  'custom',
+]);
 
 export const NoteFrontmatterSchema = z.object({
   id: z.string().uuid(),
@@ -32,9 +41,11 @@ export type ValidatedNoteFrontmatter = z.infer<typeof NoteFrontmatterSchema>;
 
 const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---/;
 
-export function parseFrontmatter(content: string): { frontmatter: NoteFrontmatter; body: string } | null {
+export function parseFrontmatter(
+  content: string
+): { frontmatter: NoteFrontmatter; body: string } | null {
   const match = content.match(FRONTMATTER_REGEX);
-  if (!match) return null;
+  if (!match || !match[1]) return null;
 
   try {
     const yamlContent = match[1];
@@ -50,9 +61,19 @@ export function parseFrontmatter(content: string): { frontmatter: NoteFrontmatte
 export function serializeFrontmatter(frontmatter: NoteFrontmatter): string {
   const lines: string[] = ['---'];
   const order = [
-    'id', 'type', 'title', 'summary', 'tags', 'agent',
-    'taskId', 'project', 'createdAt', 'updatedAt',
-    'wikilinks', 'pinned', 'archived'
+    'id',
+    'type',
+    'title',
+    'summary',
+    'tags',
+    'agent',
+    'taskId',
+    'project',
+    'createdAt',
+    'updatedAt',
+    'wikilinks',
+    'pinned',
+    'archived',
   ];
 
   for (const key of order) {
@@ -163,9 +184,9 @@ export function getRelativePath(from: string, to: string): string {
 export function extractWikilinks(content: string): string[] {
   const regex = /\[\[([^\]]+)\]\]/g;
   const links: string[] = [];
-  let match;
+  let match: RegExpExecArray | null;
   while ((match = regex.exec(content)) !== null) {
-    links.push(match[1].trim());
+    if (match[1]) links.push(match[1].trim());
   }
   return [...new Set(links)];
 }
@@ -173,9 +194,9 @@ export function extractWikilinks(content: string): string[] {
 export function extractHeadings(content: string): { level: number; text: string }[] {
   const regex = /^(#{1,6})\s+(.+)$/gm;
   const headings: { level: number; text: string }[] = [];
-  let match;
+  let match: RegExpExecArray | null;
   while ((match = regex.exec(content)) !== null) {
-    headings.push({ level: match[1].length, text: match[2].trim() });
+    if (match[1] && match[2]) headings.push({ level: match[1].length, text: match[2].trim() });
   }
   return headings;
 }

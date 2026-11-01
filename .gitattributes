@@ -1,0 +1,26 @@
+# Normaliza finais de linha (projeto desenvolvido no Windows, CI em Linux)
+* text=auto eol=lf
+
+# Scripts do Windows precisam de CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binários — nunca fazer diff/merge de texto
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.icns   binary
+*.webp   binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.wasm   binary
+*.onnx   binary
+*.gguf   binary
+*.zip    binary
+
+# Lockfile: sem merge automático de texto e fora das estatísticas de linguagem
+pnpm-lock.yaml -diff linguist-generated=true merge=binary

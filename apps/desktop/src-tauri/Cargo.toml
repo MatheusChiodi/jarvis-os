@@ -6,47 +6,31 @@ authors = ["Matheus Chiodi <mchiodi@example.com>"]
 license = "MIT"
 edition = "2021"
 
+[package.metadata]
+tauri = {
+  private-api = true
+}
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [
-    "tray-icon",
-    "global-hotkey",
-    "dialog",
-    "fs",
-    "shell",
-    "http",
-    "websocket",
-    "store",
-    "log",
-    "opener",
-    "clipboard-manager",
-    "process"
-] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-store = "2"
 tauri-plugin-log = "2"
 tauri-plugin-opener = "2"
-tauri-plugin-clipboard-manager = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-http = "2"
 tauri-plugin-websocket = "2"
 tauri-plugin-process = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-global-shortcut = "2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.0", features = ["full"] }
 anyhow = "1.0"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite", "chrono", "uuid", "migrate"] }
-sqlx-core = { version = "0.7", features = ["sqlite"] }
-r2d2 = "0.8"
-r2d2_sqlite = "0.22"
 dirs = "5.0"
-notify = "6.0"
-glob = "0.3"
-walkdir = "2.3"
-ignore = "0.4"
-clap = { version = "4.4", features = ["derive"] }

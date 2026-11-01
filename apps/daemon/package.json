@@ -1,0 +1,36 @@
+{
+  "name": "@jarvis-os/daemon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JARVIS-OS daemon - HTTP+WS server with agent runtime",
+  "type": "module",
+  "main": "./dist/server.js",
+  "bin": {
+    "jarvisd": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.build.json",
+    "dev": "tsc -w",
+    "start": "node dist/cli.js",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@jarvis-os/core": "workspace:*",
+    "@jarvis-os/memory": "workspace:*",
+    "@jarvis-os/protocol": "workspace:*",
+    "@jarvis-os/providers": "workspace:*",
+    "@jarvis-os/tools": "workspace:*",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "openai": "^4.56.0",
+    "pino": "^9.2.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  }
+}

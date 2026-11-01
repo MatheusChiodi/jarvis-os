@@ -39,7 +39,6 @@
   },
   "devDependencies": {
     "@jarvis-os/core": "workspace:*",
-    "@jarvis-os/tsconfig": "workspace:*",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4",
     "fast-glob": "^3.3.2",

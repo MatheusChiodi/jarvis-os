@@ -88,8 +88,8 @@ export const useConfigStore = create<ConfigStore>()(
 
       loadConfig: async () => {
         try {
-          const { get: getStore } = await import('@tauri-apps/plugin-store');
-          const store = await getStore('config.json');
+          const { Store } = await import('@tauri-apps/plugin-store');
+          const store = await Store.load('config.json');
           const saved = (await store.get('config')) as Partial<AppConfig> | null;
           if (saved) {
             set((state) => {
@@ -103,8 +103,8 @@ export const useConfigStore = create<ConfigStore>()(
 
       saveConfig: async () => {
         try {
-          const { get: getStore } = await import('@tauri-apps/plugin-store');
-          const store = await getStore('config.json');
+          const { Store } = await import('@tauri-apps/plugin-store');
+          const store = await Store.load('config.json');
           await store.set('config', get().config);
           await store.save();
         } catch (error) {

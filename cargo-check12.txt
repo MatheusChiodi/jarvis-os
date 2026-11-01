@@ -1,0 +1,8 @@
+﻿cargo :     Checking jarvis-os v0.1.0 (D:\VibeCode\jarvis-os\apps\desktop\src-tauri)
+No linha:1 caractere:51
++ ... \VibeCode\jarvis-os\apps\desktop\src-tauri ; cargo check 2>&1 | Out-F ...
++                                                  ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking ja...ktop\src-tauri):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.35s

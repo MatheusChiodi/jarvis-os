@@ -1,0 +1,206 @@
+# =============================================================================
+# JARVIS-OS — .gitignore
+# Regra de ouro: segredos, dados pessoais do Jarvis e artefatos gerados
+# NUNCA entram no repositório. Na dúvida, ignore e documente em .env.example.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. SEGREDOS E CREDENCIAIS (prioridade máxima)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.env
+.envrc
+/.secrets/
+/secrets/
+*.secret
+*.secrets.json
+credentials.json
+service-account*.json
+*-credentials.json
+auth.json
+token.json
+*.token
+daemon.token
+
+# Chaves e certificados
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+*.asc
+*.gpg
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.ppk
+
+# Assinatura de builds Tauri / updater
+*.sig
+tauri.key
+tauri.key.pub
+.tauri-private-key*
+
+# Configs de clientes/CLIs que podem guardar tokens
+.npmrc
+.yarnrc
+.pypirc
+.netrc
+.docker/config.json
+
+# -----------------------------------------------------------------------------
+# 2. DADOS PESSOAIS / RUNTIME DO JARVIS (memória, sessões, logs, aprovações)
+#    Em produção ficam em ~/.jarvis-os, mas protegemos cópias locais no repo.
+# -----------------------------------------------------------------------------
+.jarvis-os/
+.jarvis/
+.memory-team
+/memory-vault/
+/vault-data/
+/sessions/
+/transcripts/
+/approvals/
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+/chroma/
+.chroma/
+*.chroma
+
+# Modelos locais e caches de embeddings (pesados e regeneráveis)
+/models/
+*.gguf
+*.onnx
+*.safetensors
+*.bin
+.cache/
+.transformers-cache/
+.huggingface/
+
+# -----------------------------------------------------------------------------
+# 3. DEPENDÊNCIAS
+# -----------------------------------------------------------------------------
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+jspm_packages/
+bower_components/
+
+# -----------------------------------------------------------------------------
+# 4. BUILD / SAÍDAS GERADAS
+# -----------------------------------------------------------------------------
+dist/
+build/
+out/
+*.tsbuildinfo
+.turbo/
+.vite/
+.parcel-cache/
+.swc/
+.eslintcache
+.biome-cache/
+
+# Rust / Tauri
+target/
+**/src-tauri/target/
+**/src-tauri/gen/
+**/src-tauri/WixTools/
+*.rs.bk
+*.pdb
+
+# -----------------------------------------------------------------------------
+# 5. TESTES E COBERTURA
+# -----------------------------------------------------------------------------
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+test_output.txt
+**/test_output.txt
+*.lcov
+__snapshots__/*.snap.new
+
+# -----------------------------------------------------------------------------
+# 6. LOGS E ARQUIVOS TEMPORÁRIOS
+# -----------------------------------------------------------------------------
+/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+*.pid
+*.pid.lock
+*.seed
+/tmp/
+/temp/
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+
+# -----------------------------------------------------------------------------
+# 7. SISTEMA OPERACIONAL
+# -----------------------------------------------------------------------------
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+# Linux
+.directory
+.Trash-*
+
+# -----------------------------------------------------------------------------
+# 8. EDITORES / IDEs / FERRAMENTAS DE IA
+# -----------------------------------------------------------------------------
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+*.code-workspace
+.fleet/
+.history/
+
+# Estado local de agentes (o que for compartilhável vai em .claude/ versionado à mão)
+.claude/settings.local.json
+.claude/worktrees/
+.worktrees/
+/worktrees/
+.aider*
+.opencode/
+.cursor/
+
+# -----------------------------------------------------------------------------
+# 9. MANTER (exceções explícitas)
+# -----------------------------------------------------------------------------
+# pnpm-lock.yaml DEVE ser versionado (builds reprodutíveis e auditoria de deps)
+!pnpm-lock.yaml
+!.gitkeep

@@ -1,4 +1,4 @@
-import { simpleGit, SimpleGit } from 'simple-git';
+import { simpleGit, type SimpleGit } from 'simple-git';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { createHash } from 'crypto';
@@ -14,10 +14,8 @@ export interface WorktreeInfo {
 export class WorktreeManager {
   private git: SimpleGit;
   private baseWorktreeDir: string;
-  private projectRoot: string;
 
   constructor(projectRoot: string) {
-    this.projectRoot = projectRoot;
     this.git = simpleGit(projectRoot);
     this.baseWorktreeDir = join(tmpdir(), 'jarvis-worktrees', this.hashPath(projectRoot));
   }
@@ -37,7 +35,7 @@ export class WorktreeManager {
 
     // Create branch if not exists
     if (!branches.all.includes(branchName)) {
-      await this.git.checkoutLocalBranch(branchName, baseBranch);
+      await this.git.checkoutLocalBranch(branchName, [baseBranch]);
     } else {
       await this.git.checkout(branchName);
     }

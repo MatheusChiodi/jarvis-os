@@ -4,11 +4,13 @@ import { useOverlayStore } from './overlayStore';
 
 // Mock Tauri store plugin
 vi.mock('@tauri-apps/plugin-store', () => ({
-  get: vi.fn(() => Promise.resolve({
-    get: vi.fn(() => Promise.resolve(null)),
-    set: vi.fn(),
-    save: vi.fn(),
-  })),
+  Store: {
+    load: vi.fn(() => Promise.resolve({
+      get: vi.fn(() => Promise.resolve(null)),
+      set: vi.fn(),
+      save: vi.fn(),
+    })),
+  },
 }));
 
 describe('overlayStore', () => {

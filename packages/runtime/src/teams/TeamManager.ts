@@ -1,16 +1,15 @@
 import { generateId, nowISO } from '@jarvis-os/core';
 import type { Team, AgentRole, AgentRoleType } from '@jarvis-os/core';
 
-interface TeamManagerOptions {
+export interface TeamManagerOptions {
   teamsPath: string;
 }
 
 export class TeamManager {
   private teams: Map<string, Team> = new Map();
-  private teamsPath: string;
 
-  constructor(options: TeamManagerOptions) {
-    this.teamsPath = options.teamsPath;
+  constructor(_options: TeamManagerOptions) {
+    // teamsPath kept for future Tauri store integration
   }
 
   async loadTeams(): Promise<Team[]> {

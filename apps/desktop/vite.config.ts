@@ -17,8 +17,6 @@ export default defineConfig({
       '@jarvis-os/memory': path.resolve(__dirname, '../../packages/memory/src'),
       '@jarvis-os/runtime': path.resolve(__dirname, '../../packages/runtime/src'),
       '@jarvis-os/skills': path.resolve(__dirname, '../../packages/skills/src'),
-      '@jarvis-os/voice': path.resolve(__dirname, '../../packages/voice/src'),
-      '@jarvis-os/video': path.resolve(__dirname, '../../packages/video/src'),
       '@jarvis-os/pixel': path.resolve(__dirname, '../../packages/pixel/src'),
       '@jarvis-os/ui-kit': path.resolve(__dirname, '../../packages/ui-kit/src'),
     },

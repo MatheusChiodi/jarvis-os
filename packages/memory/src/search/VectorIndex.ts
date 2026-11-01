@@ -1,319 +1,319 @@
+import { ChromaClient } from 'chromadb';
 import { pipeline, env } from '@xenova/transformers';
-import type { SearchIndexItem, TimelineEvent, ObservationDetail, NoteType, Note } from '@jarvis-os/core';
+import type { Vault } from '../vault/Vault.js';
+import type { SearchIndexItem } from '@jarvis-os/core';
 
-// Configure transformers for local use
 env.allowLocalModels = true;
-env.useBrowserCache = true;
+env.useBrowserCache = false;
 
 const EMBEDDING_MODEL = 'Xenova/all-MiniLM-L6-v2';
-const COLLECTION_NAME = 'jarvis_memory';
+const EMBEDDING_DIMENSION = 384;
+const COLLECTION_NAME = 'jarvis-notes';
 
-let embedderPromise: Promise<any> | null = null;
-let chromaClient: any = null;
+let embeddingPipelinePromise: Promise<any> | null = null;
 
-export async function initVectorIndex(persistPath?: string): Promise<void> {
-  // Initialize embedder (lazy, cached)
-  if (!embedderPromise) {
-    embedderPromise = pipeline('feature-extraction', EMBEDDING_MODEL, {
+async function getEmbeddingPipeline() {
+  if (!embeddingPipelinePromise) {
+    embeddingPipelinePromise = pipeline('feature-extraction', EMBEDDING_MODEL, {
       quantized: true,
+      progress_callback: (progress: any) => {
+        if (progress.status === 'downloading') {
+          console.log(`Downloading embedding model: ${Math.round(progress.progress * 100)}%`);
+        }
+      },
     });
   }
+  return embeddingPipelinePromise;
+}
 
-  // Initialize Chroma (in-memory for now, would use WASM in production)
-  try {
-    const { ChromaClient } = await import('chromadb');
-    chromaClient = new ChromaClient({
-      path: persistPath || 'memory://',
-    });
+export interface VectorIndexConfig {
+  projectId: string;
+  vault: Vault;
+  persistPath?: string;
+}
 
-    await chromaClient.getOrCreateCollection({
-      name: COLLECTION_NAME,
-      metadata: { 'hnsw:space': 'cosine' },
-    });
-  } catch (error) {
-    console.warn('ChromaDB not available, vector search disabled:', error);
+export interface VectorIndex {
+  projectId: string;
+  client: ChromaClient;
+  collection: any;
+  initialized: boolean;
+}
+
+export interface SearchOptions {
+  query: string;
+  limit?: number;
+  type?: string;
+  agent?: string;
+  scoreThreshold?: number;
+}
+
+export interface SearchResult {
+  id: string;
+  score: number;
+  metadata: Record<string, any>;
+}
+
+export class VectorIndexError extends Error {
+  constructor(message: string, public readonly code: string, public readonly cause?: Error) {
+    super(message);
+    this.name = 'VectorIndexError';
   }
+}
+
+export async function createVectorIndex(config: VectorIndexConfig): Promise<VectorIndex> {
+  const client = new ChromaClient({
+    path: config.persistPath || ':memory:',
+  });
+
+  const collection = await client.getOrCreateCollection({
+    name: `${COLLECTION_NAME}_${config.projectId}`,
+    metadata: { 'hnsw:space': 'cosine' },
+  });
+
+  const index: VectorIndex = {
+    projectId: config.projectId,
+    client,
+    collection,
+    initialized: false,
+  };
+
+  index.initialized = true;
+  return index;
+}
+
+export async function openVectorIndex(projectId: string, persistPath?: string): Promise<VectorIndex> {
+  const client = new ChromaClient({
+    path: persistPath || ':memory:',
+  });
+
+  const collection = await client.getCollection({
+    name: `${COLLECTION_NAME}_${projectId}`,
+    embeddingFunction: undefined as any,
+  });
+
+  const index: VectorIndex = {
+    projectId,
+    client,
+    collection,
+    initialized: true,
+  };
+
+  return index;
 }
 
 export async function embedText(text: string): Promise<Float32Array> {
-  if (!embedderPromise) await initVectorIndex();
-  const pipe = await embedderPromise!;
+  const pipe = await getEmbeddingPipeline();
   const output = await pipe(text, { pooling: 'mean', normalize: true });
-  return Float32Array.from(output.data);
+  return Float32Array.from(output.data) as Float32Array;
 }
 
-export async function addNoteEmbedding(
+export async function embedTexts(texts: string[]): Promise<Float32Array[]> {
+  const pipe = await getEmbeddingPipeline();
+  const embeddings: Float32Array[] = [];
+  
+  for (const text of texts) {
+    const output = await pipe(text, { pooling: 'mean', normalize: true });
+    embeddings.push(Float32Array.from(output.data) as Float32Array);
+  }
+  
+  return embeddings;
+}
+
+export async function addNote(
+  index: VectorIndex,
   noteId: string,
-  text: string,
+  content: string,
   metadata: Record<string, any>
 ): Promise<void> {
-  if (!chromaClient) return;
+  if (!index.initialized) {
+    throw new VectorIndexError('Vector index not initialized', 'NOT_INITIALIZED');
+  }
 
-  const embedding = await embedText(text);
-  const collection = chromaClient.getCollection(COLLECTION_NAME);
+  const embedding = await embedText(content);
 
-  await collection.add({
+  await index.collection.add({
     ids: [noteId],
     embeddings: [Array.from(embedding)],
     metadatas: [metadata],
-    documents: [text],
+    documents: [content],
   });
 }
 
-export async function searchSimilar(
-  query: string,
-  limit = 20,
-  filter?: Record<string, any>
-): Promise<Array<{ id: string; score: number; metadata: any; document: string }>> {
-  if (!chromaClient) return [];
+export async function addNotesBatch(
+  index: VectorIndex,
+  notes: Array<{ id: string; content: string; metadata: Record<string, any> }>
+): Promise<void> {
+  if (!index.initialized) {
+    throw new VectorIndexError('Vector index not initialized', 'NOT_INITIALIZED');
+  }
 
-  const queryEmbedding = await embedText(query);
-  const collection = chromaClient.getCollection(COLLECTION_NAME);
+  if (notes.length === 0) return;
 
-  const results = await collection.query({
-    queryEmbeddings: [Array.from(queryEmbedding)],
+  const texts = notes.map((n) => n.content);
+  const embeddings = await embedTexts(texts);
+
+  await index.collection.add({
+    ids: notes.map((n) => n.id),
+    embeddings: embeddings.map((e) => Array.from(e)),
+    metadatas: notes.map((n) => n.metadata),
+    documents: notes.map((n) => n.content),
+  });
+}
+
+export async function updateNote(
+  index: VectorIndex,
+  noteId: string,
+  content: string,
+  metadata: Record<string, any>
+): Promise<void> {
+  if (!index.initialized) {
+    throw new VectorIndexError('Vector index not initialized', 'NOT_INITIALIZED');
+  }
+
+  const embedding = await embedText(content);
+
+  await index.collection.update({
+    ids: [noteId],
+    embeddings: [Array.from(embedding)],
+    metadatas: [metadata],
+    documents: [content],
+  });
+}
+
+export async function removeNote(index: VectorIndex, noteId: string): Promise<void> {
+  if (!index.initialized) {
+    throw new VectorIndexError('Vector index not initialized', 'NOT_INITIALIZED');
+  }
+
+  await index.collection.delete({ ids: [noteId] });
+}
+
+export async function search(
+  index: VectorIndex,
+  options: SearchOptions
+): Promise<SearchResult[]> {
+  if (!index.initialized) {
+    throw new VectorIndexError('Vector index not initialized', 'NOT_INITIALIZED');
+  }
+
+  const { query, limit = 10, type, agent, scoreThreshold = 0.7 } = options;
+
+  const embedding = await embedText(query);
+
+  const where: Record<string, any> = {};
+  if (type) where.type = type;
+  if (agent) where.agent = agent;
+
+  const results = await index.collection.query({
+    queryEmbeddings: [Array.from(embedding)],
     nResults: limit,
-    where: filter,
+    where: Object.keys(where).length > 0 ? where : undefined,
     include: ['metadatas', 'documents', 'distances'],
   });
 
-  return results.ids[0].map((id: string, i: number) => ({
-    id,
-    score: 1 - results.distances[0][i], // cosine similarity
-    metadata: results.metadatas[0][i],
-    document: results.documents[0][i],
-  }));
-}
-
-export async function deleteNoteEmbedding(noteId: string): Promise<void> {
-  if (!chromaClient) return;
-  const collection = chromaClient.getCollection(COLLECTION_NAME);
-  await collection.delete({ ids: [noteId] });
-}
-
-export async function updateNoteEmbedding(
-  noteId: string,
-  text: string,
-  metadata: Record<string, any>
-): Promise<void> {
-  await deleteNoteEmbedding(noteId);
-  await addNoteEmbedding(noteId, text, metadata);
-}
-
-// ============================================================================
-// Progressive Disclosure Layers
-// ============================================================================
-
-export interface SearchIndexItem {
-  id: string;
-  title: string;
-  summary: string;
-  type: NoteType;
-  agent: string;
-  tags: string[];
-  createdAt: string;
-  score: number;
-  pinned?: boolean;
-}
-
-export interface TimelineEvent {
-  timestamp: string;
-  notes: SearchIndexItem[];
-}
-
-export interface ObservationDetail extends Note {
-  relatedNotes: SearchIndexItem[];
-}
-
-// Layer 1: Compact index (search)
-export async function searchIndex(
-  vault: any, // Vault instance
-  query: string,
-  limit = 50,
-  projectId: string
-): Promise<SearchIndexItem[]> {
-  // FTS5 keyword search
-  const ftsResults = vault.searchNotes(query, limit);
-
-  // Vector search (if available)
-  let vectorResults: any[] = [];
-  try {
-    vectorResults = await searchSimilar(query, limit, { project_id: projectId });
-  } catch {
-    // Vector search not available
-  }
-
-  // Merge and rank results
-  const merged = new Map<string, SearchIndexItem>();
-
-  for (const result of ftsResults) {
-    merged.set(result.note.frontmatter.id, {
-      id: result.note.frontmatter.id,
-      title: result.note.frontmatter.title,
-      summary: result.note.frontmatter.summary,
-      type: result.note.frontmatter.type,
-      agent: result.note.frontmatter.agent,
-      tags: result.note.frontmatter.tags,
-      createdAt: result.note.frontmatter.createdAt,
-      score: result.score,
-      pinned: result.note.frontmatter.pinned,
-    });
-  }
-
-  for (const result of vectorResults) {
-    const existing = merged.get(result.id);
-    const vectorScore = result.score;
-    if (existing) {
-      // Combine scores (weighted average)
-      existing.score = (existing.score * 0.6) + (vectorScore * 0.4);
-    } else {
-      merged.set(result.id, {
-        id: result.id,
-        title: result.metadata.title,
-        summary: result.metadata.summary,
-        type: result.metadata.type,
-        agent: result.metadata.agent,
-        tags: result.metadata.tags?.split(',').filter(Boolean) || [],
-        createdAt: result.metadata.created_at,
-        score: vectorScore,
-      });
-    }
-  }
-
-  // Sort by score descending, pinned first
-  return Array.from(merged.values())
-    .sort((a, b) => {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      return b.score - a.score;
-    })
-    .slice(0, limit);
-}
-
-// Layer 2: Timeline context
-export async function getTimeline(
-  vault: any,
-  projectId: string,
-  aroundDate?: string,
-  windowDays = 7
-): Promise<TimelineEvent[]> {
-  const since = aroundDate
-    ? new Date(new Date(aroundDate).getTime() - windowDays * 24 * 60 * 60 * 1000).toISOString()
-    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-  const notes = vault.listNotes({ since, limit: 500 });
-
-  // Group by date
-  const byDate = new Map<string, SearchIndexItem[]>();
-
-  for (const note of notes) {
-    const date = note.frontmatter.createdAt.split('T')[0];
-    if (!byDate.has(date)) byDate.set(date, []);
-    byDate.get(date)!.push({
-      id: note.frontmatter.id,
-      title: note.frontmatter.title,
-      summary: note.frontmatter.summary,
-      type: note.frontmatter.type,
-      agent: note.frontmatter.agent,
-      tags: note.frontmatter.tags,
-      createdAt: note.frontmatter.createdAt,
-      score: 1,
-    });
-  }
-
-  return Array.from(byDate.entries())
-    .sort((a, b) => b[0].localeCompare(a[0])) // newest first
-    .map(([timestamp, notes]) => ({ timestamp, notes }));
-}
-
-// Layer 3: Full observations
-export async function getObservations(
-  vault: any,
-  projectId: string,
-  ids: string[]
-): Promise<ObservationDetail[]> {
-  const notes: ObservationDetail[] = [];
-
-  for (const id of ids) {
-    const note = vault.getNote(id);
-    if (!note) continue;
-
-    // Find related notes (wikilinks + tag siblings)
-    const related = await findRelatedNotes(vault, projectId, note);
-
-    notes.push({
-      ...note,
-      relatedNotes: related,
-    });
-  }
-
-  return notes;
-}
-
-async function findRelatedNotes(vault: any, projectId: string, note: Note): Promise<SearchIndexItem[]> {
-  const related = new Map<string, SearchIndexItem>();
-
-  // Wikilinks
-  for (const link of note.frontmatter.wikilinks) {
-    const linkedNote = vault.getNote(link);
-    if (linkedNote) {
-      related.set(linkedNote.frontmatter.id, {
-        id: linkedNote.frontmatter.id,
-        title: linkedNote.frontmatter.title,
-        summary: linkedNote.frontmatter.summary,
-        type: linkedNote.frontmatter.type,
-        agent: linkedNote.frontmatter.agent,
-        tags: linkedNote.frontmatter.tags,
-        createdAt: linkedNote.frontmatter.createdAt,
-        score: 1,
-      });
-    }
-  }
-
-  // Tag siblings
-  if (note.frontmatter.tags.length > 0) {
-    const allNotes = vault.listNotes({ projectId, limit: 200 });
-    for (const n of allNotes) {
-      if (n.frontmatter.id === note.frontmatter.id) continue;
-      const commonTags = n.frontmatter.tags.filter(t => note.frontmatter.tags.includes(t));
-      if (commonTags.length > 0) {
-        related.set(n.frontmatter.id, {
-          id: n.frontmatter.id,
-          title: n.frontmatter.title,
-          summary: n.frontmatter.summary,
-          type: n.frontmatter.type,
-          agent: n.frontmatter.agent,
-          tags: n.frontmatter.tags,
-          createdAt: n.frontmatter.createdAt,
-          score: commonTags.length / note.frontmatter.tags.length,
+  const searchResults: SearchResult[] = [];
+  
+  if (results.ids && results.ids[0]) {
+    for (let i = 0; i < results.ids[0].length; i++) {
+      const distance = results.distances?.[0]?.[i] ?? 1;
+      const score = 1 - distance;
+      
+      if (score >= scoreThreshold) {
+        searchResults.push({
+          id: results.ids[0][i],
+          score,
+          metadata: results.metadatas?.[0]?.[i] || {},
         });
       }
     }
   }
 
-  return Array.from(related.values())
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10);
+  return searchResults.sort((a, b) => b.score - a.score);
 }
 
-export type NoteType = 'memory' | 'decision' | 'learning' | 'communication' | 'state';
+export async function hybridSearch(
+  vault: Vault,
+  vectorIndex: VectorIndex,
+  query: string,
+  limit = 10,
+  ftsWeight = 0.5,
+  vectorWeight = 0.5
+): Promise<SearchIndexItem[]> {
+  const { searchIndex } = await import('../vault/Vault.js');
+  const [ftsResults, vectorResults] = await Promise.all([
+    searchIndex(vault, { query, limit: limit * 2 }),
+    search(vectorIndex, { query, limit: limit * 2 }),
+  ]);
 
-export interface Note {
-  frontmatter: {
-    id: string;
-    type: NoteType;
-    title: string;
-    summary: string;
-    tags: string[];
-    agent: string;
-    taskId?: string;
-    project: string;
-    createdAt: string;
-    updatedAt: string;
-    wikilinks: string[];
-    pinned: boolean;
-    archived: boolean;
-  };
-  content: string;
-  path: string;
+  const combined = new Map<string, { item: SearchIndexItem; ftsScore: number; vectorScore: number }>();
+
+  for (const item of ftsResults) {
+    const existing = combined.get(item.id);
+    const normalizedFts = 1 / (1 + item.score);
+    if (existing) {
+      existing.ftsScore = Math.max(existing.ftsScore, normalizedFts);
+    } else {
+      combined.set(item.id, { item, ftsScore: normalizedFts, vectorScore: 0 });
+    }
+  }
+
+  for (const result of vectorResults) {
+    const existing = combined.get(result.id);
+    if (existing) {
+      existing.vectorScore = Math.max(existing.vectorScore, result.score);
+    } else {
+      const { getNote } = await import('../vault/Vault.js');
+      const vaultNote = await getNote(vault, result.id);
+      if (vaultNote) {
+        combined.set(result.id, {
+          item: {
+            id: vaultNote.frontmatter.id,
+            title: vaultNote.frontmatter.title,
+            summary: vaultNote.frontmatter.summary,
+            type: vaultNote.frontmatter.type,
+            agent: vaultNote.frontmatter.agent,
+            tags: vaultNote.frontmatter.tags,
+            createdAt: vaultNote.frontmatter.createdAt,
+            score: 0,
+          },
+          ftsScore: 0,
+          vectorScore: result.score,
+        });
+      }
+    }
+  }
+
+  const results = Array.from(combined.values())
+    .map(({ item, ftsScore, vectorScore }) => ({
+      ...item,
+      score: ftsWeight * ftsScore + vectorWeight * vectorScore,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  return results;
+}
+
+export async function getCollectionStats(index: VectorIndex): Promise<{
+  count: number;
+  dimension: number;
+}> {
+  if (!index.initialized) {
+    throw new VectorIndexError('Vector index not initialized', 'NOT_INITIALIZED');
+  }
+
+  const count = await index.collection.count();
+  return { count, dimension: EMBEDDING_DIMENSION };
+}
+
+export async function persistIndex(index: VectorIndex): Promise<void> {
+  if (!index.initialized) {
+    throw new VectorIndexError('Vector index not initialized', 'NOT_INITIALIZED');
+  }
+  // Chroma persists automatically when using a file path
+}
+
+export async function closeIndex(index: VectorIndex): Promise<void> {
+  index.initialized = false;
+  // Chroma client doesn't need explicit close
 }

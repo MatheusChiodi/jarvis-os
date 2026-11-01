@@ -49,8 +49,8 @@ export const useTeamsStore = create<TeamsStore>()(
 
       loadTeams: async () => {
         try {
-          const { get } = await import('@tauri-apps/plugin-store');
-          const store = await get('teams.json');
+          const { Store } = await import('@tauri-apps/plugin-store');
+          const store = await Store.load('teams.json');
           const savedTeams = (await store.get('teams')) as Team[] | null;
           if (savedTeams && savedTeams.length > 0) {
             set((state) => {
@@ -76,8 +76,8 @@ export const useTeamsStore = create<TeamsStore>()(
 
       saveTeams: async () => {
         try {
-          const { get } = await import('@tauri-apps/plugin-store');
-          const store = await get('teams.json');
+          const { Store } = await import('@tauri-apps/plugin-store');
+          const store = await Store.load('teams.json');
           await store.set('teams', get().teams);
           await store.save();
         } catch (error) {

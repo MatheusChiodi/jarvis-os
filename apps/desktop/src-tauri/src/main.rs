@@ -1,21 +1,18 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use tauri::{
     Manager, State, WindowEvent, Emitter, Listener,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
     WebviewUrl, WebviewWindowBuilder,
 };
-use tauri_plugin_global_hotkey::{GlobalHotkeyExt, HotkeyState, Code, Modifiers};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Code, Modifiers, Shortcut};
 use tauri_plugin_store::StoreExt;
 use tauri_plugin_log::{Target, TargetKind};
-use tauri_plugin_shell::process::CommandEvent;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use serde_json::Value;
 use chrono::{DateTime, Utc};
 
 // ============================================================================
@@ -44,59 +41,6 @@ struct AgentRole {
     system_prompt: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct Note {
-    id: String,
-    project_id: String,
-    note_type: String,
-    title: String,
-    summary: String,
-    content: String,
-    frontmatter_json: String,
-    tags: String,
-    agent: String,
-    task_id: Option<String>,
-    wikilinks: String,
-    pinned: bool,
-    archived: bool,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SearchResult {
-    id: String,
-    title: String,
-    summary: String,
-    note_type: String,
-    agent: String,
-    tags: Vec<String>,
-    created_at: DateTime<Utc>,
-    score: f64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct StatuslineData {
-    plan_usage: PlanUsage,
-    context_window: u32,
-    cost: f64,
-    model: String,
-    memory: MemoryStatus,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct PlanUsage {
-    five_hour: u32,
-    seven_day: u32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct MemoryStatus {
-    project: String,
-    enabled: bool,
-    note_count: u32,
-}
-
 // ============================================================================
 // App State
 // ============================================================================
@@ -112,12 +56,8 @@ struct AppConfig {
     version: u32,
     hotkey: String,
     overlay: OverlayConfig,
-    memory: MemoryConfig,
     teams: Vec<Team>,
     skills: SkillsConfig,
-    voice: VoiceConfig,
-    video: VideoConfig,
-    pixel: PixelConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -136,43 +76,9 @@ struct WindowBounds {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct MemoryConfig {
-    vault_path: String,
-    vector_search: bool,
-    embedding_model: String,
-    hooks: HooksConfig,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct HooksConfig {
-    task_completed: bool,
-    teammate_idle: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 struct SkillsConfig {
     enabled: Vec<String>,
     custom_path: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct VoiceConfig {
-    enabled: bool,
-    wake_word: String,
-    tts_voice: String,
-    stt_engine: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct VideoConfig {
-    enabled: bool,
-    engine: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct PixelConfig {
-    enabled: bool,
-    port: u16,
 }
 
 impl Default for AppConfig {
@@ -185,30 +91,10 @@ impl Default for AppConfig {
                 theme: "system".to_string(),
                 animations: true,
             },
-            memory: MemoryConfig {
-                vault_path: "~/.jarvis-os/memory".to_string(),
-                vector_search: true,
-                embedding_model: "Xenova/all-MiniLM-L6-v2".to_string(),
-                hooks: HooksConfig { task_completed: true, teammate_idle: true },
-            },
             teams: vec![],
             skills: SkillsConfig {
                 enabled: vec!["core".to_string(), "superpowers".to_string(), "ecc".to_string(), "mattpocock".to_string()],
                 custom_path: "~/.jarvis-os/skills/custom".to_string(),
-            },
-            voice: VoiceConfig {
-                enabled: false,
-                wake_word: "jarvis".to_string(),
-                tts_voice: "faber".to_string(),
-                stt_engine: "web-speech".to_string(),
-            },
-            video: VideoConfig {
-                enabled: false,
-                engine: "hyperframes".to_string(),
-            },
-            pixel: PixelConfig {
-                enabled: false,
-                port: 3100,
             },
         }
     }
@@ -217,66 +103,6 @@ impl Default for AppConfig {
 // ============================================================================
 // Tauri Commands
 // ============================================================================
-
-#[tauri::command]
-async fn get_statusline_data(project_id: String, state: State<'_, AppState>) -> Result<StatuslineData, String> {
-    // Mock data - in production, query actual usage from Claude Code
-    Ok(StatuslineData {
-        plan_usage: PlanUsage { five_hour: 23, seven_day: 41 },
-        context_window: 53,
-        cost: 0.42,
-        model: "Opus".to_string(),
-        memory: MemoryStatus {
-            project: project_id,
-            enabled: true,
-            note_count: 38,
-        },
-    })
-}
-
-#[tauri::command]
-async fn send_chat_message(team_id: String, message: String, state: State<'_, AppState>) -> Result<String, String> {
-    // In production, this would invoke the agent runtime
-    Ok(format!("Received: {}. Processing with team {}", message, team_id))
-}
-
-#[tauri::command]
-async fn memory_search_index(project_id: String, query: String, limit: Option<u32>, state: State<'_, AppState>) -> Result<Vec<SearchResult>, String> {
-    // Mock search results
-    Ok(vec![
-        SearchResult {
-            id: Uuid::new_v4().to_string(),
-            title: format!("Result for: {}", query),
-            summary: "This is a search result summary".to_string(),
-            note_type: "memory".to_string(),
-            agent: "planner".to_string(),
-            tags: vec!["search".to_string(), "test".to_string()],
-            created_at: Utc::now(),
-            score: 0.95,
-        }
-    ])
-}
-
-#[tauri::command]
-async fn memory_get_timeline(project_id: String, window_days: Option<u32>, state: State<'_, AppState>) -> Result<Vec<TimelineEvent>, String> {
-    Ok(vec![])
-}
-
-#[tauri::command]
-async fn memory_list_notes(project_id: String, limit: Option<u32>, state: State<'_, AppState>) -> Result<Vec<Note>, String> {
-    Ok(vec![])
-}
-
-#[tauri::command]
-async fn memory_get_observations(project_id: String, ids: Vec<String>, state: State<'_, AppState>) -> Result<Vec<Note>, String> {
-    Ok(vec![])
-}
-
-#[tauri::command]
-async fn spawn_shell(cols: u16, rows: u16, state: State<'_, AppState>) -> Result<String, String> {
-    // In production, spawn a shell process and return its PID or handle
-    Ok("shell-spawned".to_string())
-}
 
 #[tauri::command]
 async fn get_teams(state: State<'_, AppState>) -> Result<Vec<Team>, String> {
@@ -295,7 +121,6 @@ async fn create_team(team: Team, state: State<'_, AppState>) -> Result<Team, Str
 async fn update_team(id: String, patch: serde_json::Value, state: State<'_, AppState>) -> Result<Team, String> {
     let mut teams = state.teams.lock().unwrap();
     if let Some(team) = teams.iter_mut().find(|t| t.id == id) {
-        // Apply patch (simplified)
         if let Some(name) = patch.get("name").and_then(|v| v.as_str()) {
             team.name = name.to_string();
         }
@@ -324,15 +149,35 @@ async fn get_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
     Ok(state.config.lock().unwrap().clone())
 }
 
+#[tauri::command]
+async fn get_daemon_token() -> Result<String, String> {
+    let config_dir = dirs::home_dir()
+        .ok_or("Could not find home directory")?
+        .join(".jarvis-os");
+    
+    let token_path = config_dir.join("daemon.token");
+    
+    if !token_path.exists() {
+        return Err("Daemon token not found. Start the daemon first.".to_string());
+    }
+    
+    let token = std::fs::read_to_string(token_path)
+        .map_err(|e| format!("Failed to read daemon token: {}", e))?
+        .trim()
+        .to_string();
+    
+    Ok(token)
+}
+
 // ============================================================================
 // Setup
 // ============================================================================
 
-async fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let handle = app.handle().clone();
 
     // Initialize state
-    let config = load_config(&handle).await.unwrap_or_default();
+    let config = load_config(&handle).unwrap_or_default();
     let teams = config.teams.clone();
 
     app.manage(AppState {
@@ -345,7 +190,7 @@ async fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error
     let overlay_window = WebviewWindowBuilder::new(
         &handle,
         "overlay",
-        WebviewUrl::Default,
+        WebviewUrl::default(),
     )
     .title("JARVIS-OS")
     .inner_size(config.overlay.default_bounds.width, config.overlay.default_bounds.height)
@@ -356,7 +201,6 @@ async fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error
     .skip_taskbar(true)
     .resizable(true)
     .visible(false)
-    .title_bar_style(tauri::TitleBarStyle::Overlay)
     .build()?;
 
     *app.state::<AppState>().overlay_window.lock().unwrap() = Some(overlay_window.clone());
@@ -379,14 +223,14 @@ async fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error
         }
     });
 
-    // Global hotkey
+    // Global shortcut
     let hotkey = config.hotkey.parse_hotkey()?;
-    handle.global_hotkey().register(hotkey)?;
+    let shortcut: Shortcut = hotkey.clone();
+    handle.global_shortcut().register(shortcut.clone())?;
 
-    handle.on_global_hotkey_event(move |event, _| {
-        if event.state == HotkeyState::Pressed {
-            let _ = handle.emit("toggle-overlay", ());
-        }
+    let handle_clone = handle.clone();
+    let _ = handle.global_shortcut().on_shortcut(shortcut, move |_shortcut, _event, _state| {
+        let _ = handle_clone.emit("toggle-overlay", ());
     });
 
     // System tray
@@ -446,10 +290,11 @@ fn hide_overlay(handle: &tauri::AppHandle) {
     }
 }
 
-async fn load_config(handle: &tauri::AppHandle) -> Result<AppConfig, Box<dyn std::error::Error>> {
-    let store = handle.store("config.json").await?;
-    if let Some(config) = store.get("config").await? {
-        Ok(serde_json::from_value(config)?)
+fn load_config(handle: &tauri::AppHandle) -> Result<AppConfig, Box<dyn std::error::Error>> {
+    let store = handle.store("config.json")?;
+    let config_value: Value = store.get("config").unwrap_or(Value::Null);
+    if config_value != Value::Null {
+        Ok(serde_json::from_value(config_value)?)
     } else {
         Ok(AppConfig::default())
     }
@@ -460,11 +305,53 @@ async fn load_config(handle: &tauri::AppHandle) -> Result<AppConfig, Box<dyn std
 // ============================================================================
 
 trait HotkeyParse {
-    fn parse_hotkey(&self) -> Result<tauri_plugin_global_hotkey::Hotkey, String>;
+    fn parse_hotkey(&self) -> Result<Shortcut, String>;
+}
+
+fn char_to_code(c: char) -> Option<Code> {
+    match c.to_ascii_uppercase() {
+        'A' => Some(Code::KeyA),
+        'B' => Some(Code::KeyB),
+        'C' => Some(Code::KeyC),
+        'D' => Some(Code::KeyD),
+        'E' => Some(Code::KeyE),
+        'F' => Some(Code::KeyF),
+        'G' => Some(Code::KeyG),
+        'H' => Some(Code::KeyH),
+        'I' => Some(Code::KeyI),
+        'J' => Some(Code::KeyJ),
+        'K' => Some(Code::KeyK),
+        'L' => Some(Code::KeyL),
+        'M' => Some(Code::KeyM),
+        'N' => Some(Code::KeyN),
+        'O' => Some(Code::KeyO),
+        'P' => Some(Code::KeyP),
+        'Q' => Some(Code::KeyQ),
+        'R' => Some(Code::KeyR),
+        'S' => Some(Code::KeyS),
+        'T' => Some(Code::KeyT),
+        'U' => Some(Code::KeyU),
+        'V' => Some(Code::KeyV),
+        'W' => Some(Code::KeyW),
+        'X' => Some(Code::KeyX),
+        'Y' => Some(Code::KeyY),
+        'Z' => Some(Code::KeyZ),
+        '0' => Some(Code::Digit0),
+        '1' => Some(Code::Digit1),
+        '2' => Some(Code::Digit2),
+        '3' => Some(Code::Digit3),
+        '4' => Some(Code::Digit4),
+        '5' => Some(Code::Digit5),
+        '6' => Some(Code::Digit6),
+        '7' => Some(Code::Digit7),
+        '8' => Some(Code::Digit8),
+        '9' => Some(Code::Digit9),
+        _ => None,
+    }
 }
 
 impl HotkeyParse for String {
-    fn parse_hotkey(&self) -> Result<tauri_plugin_global_hotkey::Hotkey, String> {
+    fn parse_hotkey(&self) -> Result<Shortcut, String> {
         let parts: Vec<&str> = self.split('+').collect();
         let mut modifiers = Modifiers::empty();
         let mut key = None;
@@ -477,7 +364,7 @@ impl HotkeyParse for String {
                 "alt" | "option" => modifiers |= Modifiers::ALT,
                 k if k.len() == 1 => {
                     if let Some(c) = k.chars().next() {
-                        key = Some(Code::from_char(c).ok_or("Invalid key")?);
+                        key = Some(char_to_code(c).ok_or("Invalid key")?);
                     }
                 }
                 "space" => key = Some(Code::Space),
@@ -499,7 +386,7 @@ impl HotkeyParse for String {
         }
 
         let key = key.ok_or("No key specified")?;
-        Ok(tauri_plugin_global_hotkey::Hotkey::new(Some(modifiers), key))
+        Ok(Shortcut::new(Some(modifiers), key))
     }
 }
 
@@ -517,7 +404,7 @@ fn main() {
                 Target::new(TargetKind::Webview),
             ])
             .build())
-        .plugin(tauri_plugin_global_hotkey::Builder::new().build())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
@@ -528,19 +415,13 @@ fn main() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(setup_app)
         .invoke_handler(tauri::generate_handler![
-            get_statusline_data,
-            send_chat_message,
-            memory_search_index,
-            memory_get_timeline,
-            memory_list_notes,
-            memory_get_observations,
-            spawn_shell,
             get_teams,
             create_team,
             update_team,
             delete_team,
             save_config,
             get_config,
+            get_daemon_token,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

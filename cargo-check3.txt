@@ -1,0 +1,31 @@
+﻿cargo :    Compiling jarvis-os v0.1.0 (D:\VibeCode\jarvis-os\apps\desktop\src-tauri)
+No linha:1 caractere:51
++ ... \VibeCode\jarvis-os\apps\desktop\src-tauri ; cargo check 2>&1 | Out-F ...
++                                                  ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling ja...ktop\src-tauri):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+error: failed to run custom build command for `jarvis-os v0.1.0 (D:\VibeCode\jarvis-os\apps\desktop\src-tauri)`
+
+Caused by:
+  process didn't exit successfully: 
+`D:\VibeCode\jarvis-os\apps\desktop\src-tauri\target\debug\build\jarvis-os-fc9e31678d2ceefc\build-script-build` (exit 
+code: 1)
+  --- stdout
+  cargo:rerun-if-env-changed=TAURI_CONFIG
+  cargo:rustc-check-cfg=cfg(desktop)
+  cargo:rustc-cfg=desktop
+  cargo:rustc-check-cfg=cfg(mobile)
+  cargo:rerun-if-changed=D:\VibeCode\jarvis-os\apps\desktop\src-tauri\tauri.conf.json
+  cargo:rustc-env=TAURI_ANDROID_PACKAGE_NAME_APP_NAME=jarvis_os
+  cargo:rustc-env=TAURI_ANDROID_PACKAGE_NAME_PREFIX=com_mchiodi
+  cargo:rustc-check-cfg=cfg(dev)
+  cargo:rustc-cfg=dev
+  cargo:PERMISSION_FILES_PATH=D:\VibeCode\jarvis-os\apps\desktop\src-tauri\target\debug\build\jarvis-os-75ce90fb47f214c
+4\out\app-manifest\__app__-permission-files
+  cargo:rerun-if-changed=D:\VibeCode\jarvis-os\apps\desktop\src-tauri\capabilities
+  cargo:rerun-if-env-changed=REMOVE_UNUSED_COMMANDS
+  cargo:rustc-env=TAURI_ENV_TARGET_TRIPLE=x86_64-pc-windows-msvc
+  package.metadata does not exist
+  `D:\VibeCode\jarvis-os\apps\desktop\src-tauri\icons/icon.ico` not found; required for generating a Windows Resource 
+file during tauri-build

@@ -1,0 +1,43 @@
+﻿cargo :     Checking jarvis-os v0.1.0 (D:\VibeCode\jarvis-os\apps\desktop\src-tauri)
+No linha:1 caractere:51
++ ... \VibeCode\jarvis-os\apps\desktop\src-tauri ; cargo check 2>&1 | Out-F ...
++                                                  ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking ja...ktop\src-tauri):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `ShortcutState`
+  --> src\main.rs:11:55
+   |
+11 | use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState, Code, Modifiers, Shortcut};
+   |                                                       ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0277]: the trait bound `Code: TryFrom<char>` is not satisfied
+   --> src\main.rs:325:36
+    |
+325 |                         key = Some(Code::try_from(c).ok_or("Invalid key")?);
+    |                                    ^^^^ the trait `From<char>` is not implemented for `Code`
+    |
+    = note: required for `char` to implement `Into<Code>`
+    = note: required for `Code` to implement `TryFrom<char>`
+
+error[E0599]: no method named `ok_or` found for enum `Result<T, E>` in the current scope
+   --> src\main.rs:325:54
+    |
+325 |                         key = Some(Code::try_from(c).ok_or("Invalid key")?);
+    |                                                      ^^^^^ method not found in `Result<Code, Infallible>`
+
+error[E0277]: the trait bound `Code: From<char>` is not satisfied
+   --> src\main.rs:325:36
+    |
+325 |                         key = Some(Code::try_from(c).ok_or("Invalid key")?);
+    |                                    ^^^^^^^^^^^^^^^^^ the trait `From<char>` is not implemented for `Code`
+    |
+    = note: required for `char` to implement `Into<Code>`
+    = note: required for `Code` to implement `TryFrom<char>`
+
+Some errors have detailed explanations: E0277, E0599.
+For more information about an error, try `rustc --explain E0277`.
+warning: `jarvis-os` (bin "jarvis-os") generated 1 warning
+error: could not compile `jarvis-os` (bin "jarvis-os") due to 3 previous errors; 1 warning emitted

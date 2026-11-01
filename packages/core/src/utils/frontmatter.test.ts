@@ -1,5 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { parseFrontmatter, serializeFrontmatter, generateId, slugify, nowISO, extractWikilinks, extractHeadings } from './index';
+import { describe, expect, it } from 'vitest';
+import {
+  extractHeadings,
+  extractWikilinks,
+  generateId,
+  nowISO,
+  parseFrontmatter,
+  serializeFrontmatter,
+  slugify,
+} from './index';
 
 describe('core/utils', () => {
   describe('parseFrontmatter', () => {
