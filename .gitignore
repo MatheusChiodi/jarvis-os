@@ -140,6 +140,7 @@ __snapshots__/*.snap.new
 # -----------------------------------------------------------------------------
 /logs/
 *.log
+cargo-check*.txt
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
