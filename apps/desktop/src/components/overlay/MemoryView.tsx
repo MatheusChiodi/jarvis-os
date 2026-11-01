@@ -1,16 +1,20 @@
 import type { SearchIndexItem, TimelineEvent } from '@jarvis-os/core';
 import { invoke } from '@tauri-apps/api/core';
-import { Database, Filter, Link, Search } from 'lucide-react';
+import { Database, Filter, Link, Search, Clock, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTeamsStore } from '../../stores/teamsStore';
 
 type MemoryViewMode = 'search' | 'timeline' | 'graph' | 'recent';
 
+interface SearchIndexItemWithPinned extends SearchIndexItem {
+  pinned?: boolean;
+}
+
 export function MemoryView() {
   const { activeTeamId } = useTeamsStore();
   const [mode, setMode] = useState<MemoryViewMode>('search');
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchIndexItem[]>([]);
+  const [results, setResults] = useState<SearchIndexItemWithPinned[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [observations, setObservations] = useState<any[]>([]);
@@ -32,7 +36,7 @@ export function MemoryView() {
     if (!activeTeamId || !query.trim()) return;
     setLoading(true);
     try {
-      const data = await invoke('memory_search_index', {
+      const data = await invoke<SearchIndexItemWithPinned[]>('memory_search_index', {
         projectId: activeTeamId,
         query,
         limit: 50,
@@ -49,7 +53,7 @@ export function MemoryView() {
     if (!activeTeamId) return;
     setLoading(true);
     try {
-      const data = await invoke('memory_get_timeline', { projectId: activeTeamId, windowDays: 30 });
+      const data = await invoke<TimelineEvent[]>('memory_get_timeline', { projectId: activeTeamId, windowDays: 30 });
       setTimeline(data);
     } catch (error) {
       console.error('Timeline failed:', error);
@@ -62,8 +66,8 @@ export function MemoryView() {
     if (!activeTeamId) return;
     setLoading(true);
     try {
-      const data = await invoke('memory_list_notes', { projectId: activeTeamId, limit: 20 });
-      setResults(data.map((n: any) => ({ ...n, score: 1 })));
+      const data = await invoke<SearchIndexItemWithPinned[]>('memory_list_notes', { projectId: activeTeamId, limit: 20 });
+      setResults(data.map((n) => ({ ...n, score: 1 })));
     } catch (error) {
       console.error('Recent failed:', error);
     } finally {
@@ -75,7 +79,7 @@ export function MemoryView() {
     if (!activeTeamId) return;
     setLoading(true);
     try {
-      const data = await invoke('memory_get_observations', { projectId: activeTeamId, ids });
+      const data = await invoke<any[]>('memory_get_observations', { projectId: activeTeamId, ids });
       setObservations(data);
       setSelectedIds(ids);
     } catch (error) {
@@ -227,6 +231,7 @@ export function MemoryView() {
                   key={item.id}
                   item={item}
                   onClick={() => handleResultClick(item)}
+                  selected={selectedIds.includes(item.id)}
                 />
               ))}
             </div>
@@ -260,8 +265,8 @@ export function MemoryView() {
 function SearchResultItem({
   item,
   onClick,
-  selected,
-}: { item: SearchIndexItem; onClick: () => void; selected: boolean }) {
+  selected = false,
+}: { item: SearchIndexItemWithPinned; onClick: () => void; selected?: boolean }) {
   const typeColors: Record<string, string> = {
     memory: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
     decision: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
@@ -370,7 +375,7 @@ function ObservationDetailPanel({
           </button>
         </div>
         <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
-          {observations.map((obs: any) => (
+          {observations.map((obs) => (
             <div
               key={obs.id}
               className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
@@ -396,5 +401,3 @@ function ObservationDetailPanel({
     </div>
   );
 }
-
-import { Clock, X } from 'lucide-react';

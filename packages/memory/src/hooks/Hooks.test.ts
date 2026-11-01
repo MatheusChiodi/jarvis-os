@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Vault } from '../vault/Vault';
+import type { Vault, Note } from '../vault/Vault';
 import {
   type HookContext,
   builtInHooks,
@@ -10,14 +10,27 @@ import {
   onTeammateIdle,
 } from './Hooks';
 
+const createMockStmt = () => ({
+  run: vi.fn(),
+  bind: vi.fn(),
+  step: vi.fn().mockReturnValue(false),
+  getAsObject: vi.fn(),
+  free: vi.fn(),
+});
+
+const mockDb = {
+  prepare: vi.fn(() => createMockStmt()),
+  exec: vi.fn(),
+  close: vi.fn(),
+  export: vi.fn().mockReturnValue(new Uint8Array()),
+};
+
 const mockVault: Vault = {
   projectId: 'test-project',
   path: '/tmp/test-project',
-  db: {} as any,
+  db: mockDb as any,
   sqlJs: {} as any,
   initialized: true,
-  listNotes: vi.fn(),
-  saveNote: vi.fn(),
 };
 
 const mockContext: HookContext = {
@@ -30,22 +43,23 @@ const mockContext: HookContext = {
 describe('Hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockVault.listNotes = vi.fn().mockResolvedValue([]);
-    mockVault.saveNote = vi.fn().mockImplementation(async (note: any) => note);
+    mockDb.prepare.mockReturnValue(createMockStmt());
   });
 
   describe('onTaskCompleted', () => {
     it('should return success when disabled', async () => {
-      // The config is internal, so we test the behavior
       const result = await onTaskCompleted({ ...mockContext, taskId: undefined });
       expect(result.success).toBe(true);
     });
 
     it('should create learning note when task completed', async () => {
-      mockVault.listNotes = vi.fn().mockResolvedValue([]);
-      mockVault.saveNote = vi
-        .fn()
-        .mockImplementation(async (note: any) => ({ ...note, path: `${note.frontmatter.id}.md` }));
+      const stmt = createMockStmt();
+      stmt.step.mockReturnValueOnce(false);
+      mockDb.prepare.mockReturnValue(stmt);
+
+      const saveStmt = createMockStmt();
+      saveStmt.run.mockReturnValue(undefined);
+      mockDb.prepare.mockReturnValueOnce(saveStmt);
 
       const result = await onTaskCompleted(mockContext);
 
@@ -54,21 +68,44 @@ describe('Hooks', () => {
       expect(result.note?.frontmatter.type).toBe('learning');
       expect(result.note?.frontmatter.taskId).toBe('task-1');
       expect(result.note?.frontmatter.agent).toBe('agent-1');
-      expect(mockVault.saveNote).toHaveBeenCalled();
     });
 
     it('should not create note if learning note already exists', async () => {
-      mockVault.listNotes = vi.fn().mockResolvedValue([{ frontmatter: { type: 'learning' } }]);
+      const stmt = createMockStmt();
+      stmt.step.mockReturnValueOnce(true).mockReturnValueOnce(false);
+      stmt.getAsObject.mockReturnValueOnce({
+        id: 'existing-note',
+        project_id: 'test-project',
+        type: 'learning',
+        title: 'Existing Learning',
+        summary: 'Existing',
+        content: 'Content',
+        tags: JSON.stringify([]),
+        agent: 'agent-1',
+        task_id: 'task-1',
+        wikilinks: JSON.stringify([]),
+        pinned: 0,
+        archived: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        path: 'existing.md',
+      });
+      mockDb.prepare.mockReturnValue(stmt);
 
       const result = await onTaskCompleted(mockContext);
 
       expect(result.success).toBe(true);
       expect(result.note).toBeUndefined();
-      expect(mockVault.saveNote).not.toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
-      mockVault.saveNote = vi.fn().mockRejectedValue(new Error('DB Error'));
+      const stmt = createMockStmt();
+      stmt.step.mockReturnValueOnce(false);
+      mockDb.prepare.mockReturnValueOnce(stmt);
+
+      const saveStmt = createMockStmt();
+      saveStmt.run.mockImplementation(() => { throw new Error('DB Error'); });
+      mockDb.prepare.mockReturnValueOnce(saveStmt);
 
       const result = await onTaskCompleted(mockContext);
 
@@ -79,10 +116,13 @@ describe('Hooks', () => {
 
   describe('onTeammateIdle', () => {
     it('should create state note when agent idle', async () => {
-      mockVault.listNotes = vi.fn().mockResolvedValue([]);
-      mockVault.saveNote = vi
-        .fn()
-        .mockImplementation(async (note: any) => ({ ...note, path: `${note.frontmatter.id}.md` }));
+      const stmt = createMockStmt();
+      stmt.step.mockReturnValueOnce(false);
+      mockDb.prepare.mockReturnValueOnce(stmt);
+
+      const saveStmt = createMockStmt();
+      saveStmt.run.mockReturnValue(undefined);
+      mockDb.prepare.mockReturnValueOnce(saveStmt);
 
       const result = await onTeammateIdle(mockContext);
 
@@ -91,24 +131,45 @@ describe('Hooks', () => {
       expect(result.note?.frontmatter.type).toBe('state');
       expect(result.note?.frontmatter.agent).toBe('agent-1');
       expect(result.note?.frontmatter.pinned).toBe(true);
-      expect(mockVault.saveNote).toHaveBeenCalled();
     });
 
     it('should not create note if recent state note exists', async () => {
       const recentDate = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      mockVault.listNotes = vi
-        .fn()
-        .mockResolvedValue([{ frontmatter: { type: 'state', createdAt: recentDate } }]);
+      const stmt = createMockStmt();
+      stmt.step.mockReturnValueOnce(true).mockReturnValueOnce(false);
+      stmt.getAsObject.mockReturnValueOnce({
+        id: 'existing-state',
+        project_id: 'test-project',
+        type: 'state',
+        title: 'Existing State',
+        summary: 'Existing',
+        content: 'Content',
+        tags: JSON.stringify([]),
+        agent: 'agent-1',
+        task_id: null,
+        wikilinks: JSON.stringify([]),
+        pinned: 1,
+        archived: 0,
+        created_at: recentDate,
+        updated_at: recentDate,
+        path: 'existing.md',
+      });
+      mockDb.prepare.mockReturnValue(stmt);
 
       const result = await onTeammateIdle(mockContext);
 
       expect(result.success).toBe(true);
       expect(result.note).toBeUndefined();
-      expect(mockVault.saveNote).not.toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
-      mockVault.saveNote = vi.fn().mockRejectedValue(new Error('DB Error'));
+      const stmt = createMockStmt();
+      stmt.step.mockReturnValueOnce(false);
+      mockDb.prepare.mockReturnValueOnce(stmt);
+
+      const saveStmt = createMockStmt();
+      saveStmt.run.mockImplementation(() => { throw new Error('DB Error'); });
+      mockDb.prepare.mockReturnValueOnce(saveStmt);
 
       const result = await onTeammateIdle(mockContext);
 
@@ -119,9 +180,9 @@ describe('Hooks', () => {
 
   describe('onTaskStarted', () => {
     it('should create state note when task started', async () => {
-      mockVault.saveNote = vi
-        .fn()
-        .mockImplementation(async (note: any) => ({ ...note, path: `${note.frontmatter.id}.md` }));
+      const saveStmt = createMockStmt();
+      saveStmt.run.mockReturnValue(undefined);
+      mockDb.prepare.mockReturnValue(saveStmt);
 
       const result = await onTaskStarted(mockContext);
 
@@ -141,9 +202,9 @@ describe('Hooks', () => {
 
   describe('onDecisionMade', () => {
     it('should create decision note', async () => {
-      mockVault.saveNote = vi
-        .fn()
-        .mockImplementation(async (note: any) => ({ ...note, path: `${note.frontmatter.id}.md` }));
+      const saveStmt = createMockStmt();
+      saveStmt.run.mockReturnValue(undefined);
+      mockDb.prepare.mockReturnValue(saveStmt);
 
       const result = await onDecisionMade(
         mockContext,
@@ -162,9 +223,9 @@ describe('Hooks', () => {
 
   describe('onCommunicationSent', () => {
     it('should create communication note', async () => {
-      mockVault.saveNote = vi
-        .fn()
-        .mockImplementation(async (note: any) => ({ ...note, path: `${note.frontmatter.id}.md` }));
+      const saveStmt = createMockStmt();
+      saveStmt.run.mockReturnValue(undefined);
+      mockDb.prepare.mockReturnValue(saveStmt);
 
       const result = await onCommunicationSent(
         mockContext,

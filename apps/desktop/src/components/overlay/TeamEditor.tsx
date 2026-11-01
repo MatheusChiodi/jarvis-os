@@ -8,6 +8,7 @@ import {
   Mic,
   Save,
   Settings,
+  Trash2,
   TrendingUp,
   Video,
   X,

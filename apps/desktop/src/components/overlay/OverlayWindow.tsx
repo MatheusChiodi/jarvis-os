@@ -7,7 +7,7 @@ import { Statusline } from './Statusline';
 import { TeamsSidebar } from './TeamsSidebar';
 
 export function OverlayWindow() {
-  const { isOpen, bounds, setBounds, setOpen, activeView, sidebarCollapsed, toggleSidebar } =
+  const { bounds, setBounds, activeView, sidebarCollapsed } =
     useOverlayStore();
   const { teams, activeTeamId } = useTeamsStore();
   const windowRef = useRef<HTMLDivElement>(null);
@@ -90,10 +90,10 @@ export function OverlayWindow() {
         transform: `translate(${bounds.x}px, ${bounds.y}px)`,
         width: bounds.width,
         height: bounds.height,
-      }}
+      } as React.CSSProperties}
       onMouseDown={handleMouseDown}
     >
-      <TitleBar onClose={() => setOpen(false)} />
+      <TitleBar onClose={() => useOverlayStore.getState().setOpen(false)} />
       <div className="flex-1 flex overflow-hidden">
         {!sidebarCollapsed && <TeamsSidebar teams={teams} activeTeamId={activeTeamId} />}
         <div
@@ -147,7 +147,7 @@ function TitleBar({ onClose }: { onClose: () => void }) {
   return (
     <div
       className="flex items-center justify-between h-10 px-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 -ml-1 -mr-1 -mt-1 select-none"
-      style={{ WebkitAppRegion: 'drag' }}
+      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
@@ -160,7 +160,7 @@ function TitleBar({ onClose }: { onClose: () => void }) {
         <button
           onClick={toggleSidebar}
           className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          style={{ WebkitAppRegion: 'no-drag' }}
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {sidebarCollapsed ? (
@@ -172,7 +172,7 @@ function TitleBar({ onClose }: { onClose: () => void }) {
         <button
           onClick={onClose}
           className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          style={{ WebkitAppRegion: 'no-drag' }}
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           aria-label="Close"
         >
           <X className="w-4 h-4" />

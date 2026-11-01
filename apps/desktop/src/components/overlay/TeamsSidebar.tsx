@@ -1,3 +1,4 @@
+import type { Team } from '@jarvis-os/core';
 import {
   Bot,
   Database,
@@ -27,13 +28,13 @@ const teamIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 import { Globe } from 'lucide-react';
 
 interface TeamsSidebarProps {
-  teams: Array<{ id: string; name: string; description?: string }>;
+  teams: Team[];
   activeTeamId: string | undefined;
 }
 
 export function TeamsSidebar({ teams, activeTeamId }: TeamsSidebarProps) {
   const { setActiveTeam, createTeam, deleteTeam, updateTeam } = useTeamsStore();
-  const { sidebarCollapsed, setSidebarCollapsed } = useOverlayStore();
+  const { sidebarCollapsed } = useOverlayStore();
   const [showEditor, setShowEditor] = useState(false);
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
 
@@ -79,7 +80,7 @@ export function TeamsSidebar({ teams, activeTeamId }: TeamsSidebarProps) {
 
       {showEditor && (
         <TeamEditor
-          team={editingTeam ? teams.find((t) => t.id === editingTeam) : null}
+          team={editingTeam ? teams.find((t) => t.id === editingTeam) ?? null : null}
           onClose={() => {
             setShowEditor(false);
             setEditingTeam(null);
@@ -103,7 +104,7 @@ function TeamItem({
   onEdit,
   onDelete,
 }: {
-  team: { id: string; name: string; description?: string };
+  team: Team;
   isActive: boolean;
   onSelect: () => void;
   onEdit: () => void;

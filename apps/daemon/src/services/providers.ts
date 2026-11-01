@@ -22,6 +22,7 @@ export interface ChatCompletionOptions {
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface ChatCompletionResult {
@@ -92,6 +93,7 @@ export class ProviderRegistry {
 
   async *chatCompletion(options: any): AsyncGenerator<any, void, unknown> {
     const modelRefs = this.resolveModel('default');
+    const signal = options.signal;
 
     for (const modelRef of modelRefs) {
       const provider = this.getProvider(modelRef.providerId);
@@ -101,19 +103,25 @@ export class ProviderRegistry {
       }
 
       try {
-        const stream = await provider.client.chat.completions.create({
-          model: modelRef.model,
-          messages: options.messages,
-          tools: options.tools,
-          tool_choice: options.toolChoice,
-          temperature: options.temperature ?? 0.7,
-          max_tokens: options.maxTokens,
-          stream: true,
-        });
+        const stream = await provider.client.chat.completions.create(
+          {
+            model: modelRef.model,
+            messages: options.messages,
+            tools: options.tools,
+            tool_choice: options.toolChoice,
+            temperature: options.temperature ?? 0.7,
+            max_tokens: options.maxTokens,
+            stream: true,
+          },
+          { signal }
+        );
 
         const accumulatedToolCalls: any[] = [];
 
         for await (const chunk of stream) {
+          if (signal?.aborted) {
+            throw new DOMException('Aborted', 'AbortError');
+          }
           const delta = chunk.choices[0]?.delta;
           if (delta?.content) {
             yield { content: delta.content, toolCalls: undefined, done: false };
@@ -145,6 +153,9 @@ export class ProviderRegistry {
         };
         return;
       } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          throw error;
+        }
         const isRetryable =
           (error as any).status === 429 ||
           (error as any).status === 500 ||

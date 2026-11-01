@@ -10,6 +10,8 @@ import { resolveApproval } from './services/approval.js';
 import { createSession, getHistory, getSession, listSessions } from './services/session.js';
 import { pendingApprovals } from './services/state.js';
 import { send } from './websocket.js';
+import { z } from 'zod';
+import { ClientMessageSchema } from '@jarvis-os/protocol';
 
 const logger = pino({
   name: 'jarvisd',
@@ -30,9 +32,47 @@ const ALLOWED_ORIGINS = new Set([
   'http://localhost:1420',
 ]);
 
+// Rate limiting: max 30 messages per 10 seconds per connection
+const MESSAGE_LIMIT = 30;
+const MESSAGE_WINDOW_MS = 10_000;
+const MAX_PAYLOAD_SIZE = 1024 * 1024; // 1 MB
+
 interface AuthenticatedWS extends WebSocket {
   authenticated?: boolean;
   sessionId?: string;
+  messageCount: number;
+  windowStart: number;
+}
+
+interface RateLimitInfo {
+  count: number;
+  windowStart: number;
+}
+
+const rateLimitMap = new Map<WebSocket, RateLimitInfo>();
+
+function checkRateLimit(ws: WebSocket): boolean {
+  const now = Date.now();
+  const info = rateLimitMap.get(ws) || { count: 0, windowStart: now };
+  if (now - info.windowStart > MESSAGE_WINDOW_MS) {
+    info.count = 0;
+    info.windowStart = now;
+  }
+  info.count++;
+  rateLimitMap.set(ws, info);
+  return info.count <= MESSAGE_LIMIT;
+}
+
+function validateMessage(data: unknown): { ok: true; message: z.infer<typeof ClientMessageSchema> } | { ok: false; error: string } {
+  try {
+    const message = ClientMessageSchema.parse(data);
+    return { ok: true, message };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { ok: false, error: error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join('; ') };
+    }
+    return { ok: false, error: String(error) };
+  }
 }
 
 async function handleHealth(_req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
@@ -48,6 +88,9 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
     return;
   }
 
+  ws.messageCount = 0;
+  ws.windowStart = Date.now();
+
   const authTimeout = setTimeout(() => {
     if (!ws.authenticated) {
       logger.warn('Auth timeout, closing connection');
@@ -56,12 +99,39 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
   }, 5000);
 
   ws.on('message', async (data: Buffer) => {
+    // Check payload size
+    if (data.length > MAX_PAYLOAD_SIZE) {
+      logger.warn({ size: data.length }, 'Payload too large');
+      ws.close(1009, 'Payload too large');
+      return;
+    }
+
+    // Rate limiting
+    if (!checkRateLimit(ws)) {
+      logger.warn('Rate limit exceeded');
+      ws.close(1009, 'Rate limit exceeded');
+      return;
+    }
+
     try {
       const message = JSON.parse(data.toString());
 
+      // Validate message schema
+      const validation = validateMessage(message);
+      if (!validation.ok) {
+        logger.warn({ error: validation.error }, 'Invalid message schema');
+        send(ws, {
+          type: 'error',
+          code: 'BAD_REQUEST',
+          message: validation.error,
+          ts: new Date().toISOString(),
+        });
+        return;
+      }
+
       if (!ws.authenticated) {
-        if (message.type === 'auth') {
-          if (validateToken(message.token)) {
+        if (validation.message.type === 'auth') {
+          if (validateToken(validation.message.token)) {
             ws.authenticated = true;
             clearTimeout(authTimeout);
             logger.info('Client authenticated');
@@ -90,16 +160,17 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
             ws.close(4401, 'Invalid token');
           }
         } else {
-          logger.warn({ type: message.type }, 'Message before auth');
+          logger.warn({ type: validation.message.type }, 'Message before auth');
           ws.close(4401, 'Unauthorized');
         }
         return;
       }
 
-      // Authenticated messages
-      switch (message.type) {
+      // Authenticated messages - use validated message
+      const msg = validation.message;
+      switch (msg.type) {
         case 'session.create': {
-          const session = await createSession(message.title);
+          const session = await createSession(msg.title);
           send(ws, { type: 'session.created', session, ts: new Date().toISOString() });
           break;
         }
@@ -109,19 +180,19 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
           break;
         }
         case 'session.history': {
-          const messages = getHistory(message.sessionId);
+          const messages = getHistory(msg.sessionId);
           send(ws, { type: 'session.history.result', messages, ts: new Date().toISOString() });
           break;
         }
         case 'chat.send': {
-          const session = getSession(message.sessionId);
+          const session = getSession(msg.sessionId);
           if (!session) {
             send(ws, {
               type: 'error',
               code: 'BAD_REQUEST',
               message: 'Session not found',
               ts: new Date().toISOString(),
-              sessionId: message.sessionId,
+              sessionId: msg.sessionId,
             });
             break;
           }
@@ -131,16 +202,16 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
               code: 'BUSY',
               message: 'Session busy with another turn',
               ts: new Date().toISOString(),
-              sessionId: message.sessionId,
+              sessionId: msg.sessionId,
             });
             break;
           }
-          ws.sessionId = message.sessionId;
-          await runAgentTurn(session, message.text, ws);
+          ws.sessionId = msg.sessionId;
+          await runAgentTurn(session, msg.text, ws);
           break;
         }
         case 'chat.cancel': {
-          const session = getSession(message.sessionId);
+          const session = getSession(msg.sessionId);
           if (session?.currentTurn) {
             session.currentTurn.aborted = true;
             session.currentTurn.abortController.abort();
@@ -148,14 +219,14 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
           break;
         }
         case 'approval.respond': {
-          resolveApproval(message.approvalId, message.decision);
+          resolveApproval(msg.approvalId, msg.decision);
           break;
         }
         default: {
           send(ws, {
             type: 'error',
             code: 'BAD_REQUEST',
-            message: `Unknown message type: ${message.type}`,
+            message: `Unknown message type: ${msg.type}`,
             ts: new Date().toISOString(),
           });
         }
@@ -173,6 +244,7 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
 
   ws.on('close', () => {
     clearTimeout(authTimeout);
+    rateLimitMap.delete(ws);
     if (ws.sessionId) {
       const session = getSession(ws.sessionId);
       if (session) {

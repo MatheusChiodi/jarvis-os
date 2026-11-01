@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useOverlayStore } from '../../stores/overlayStore';
 
 export function FloatingButton() {
-  const { isOpen, toggle, setOpen } = useOverlayStore();
+  const { isOpen, toggle } = useOverlayStore();
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {

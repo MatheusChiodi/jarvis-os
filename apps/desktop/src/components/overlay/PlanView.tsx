@@ -207,7 +207,6 @@ export function PlanView() {
             {statusColumns.map((col) => (
               <KanbanColumn
                 key={col.id}
-                columnId={col.id}
                 label={col.label}
                 Icon={col.icon}
                 tasks={allTasks.filter((t) => t.status === col.id)}
@@ -229,11 +228,10 @@ export function PlanView() {
 }
 
 function KanbanColumn({
-  columnId,
   label,
   Icon,
   tasks,
-}: { columnId: string; label: string; Icon: React.ComponentType; tasks: Task[] }) {
+}: { label: string; Icon: React.ComponentType<{ className?: string }>; tasks: Task[] }) {
   return (
     <div className="flex-shrink-0 w-72 bg-gray-50 dark:bg-gray-800 rounded-xl p-3 flex flex-col min-h-0">
       <div className="flex items-center justify-between mb-3">
@@ -314,7 +312,7 @@ function TaskRow({ task }: { task: Task }) {
         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{task.description}</p>
       </div>
       <span
-        className={`px-2 py-0.5 text-xs rounded-full ${statusColors[task.status].replace('text-', 'bg-').replace('dark:text-', 'dark:bg-').replace('600', '100').replace('400', '900/30')}`}
+        className={`px-2 py-0.5 text-xs rounded-full ${(statusColors[task.status] || '').replace('text-', 'bg-').replace('dark:text-', 'dark:bg-').replace('600', '100').replace('400', '900/30')}`}
       >
         {task.status.replace('_', ' ')}
       </span>

@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, useContext, useEffect } from 'react';
+import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { useConfigStore } from '../stores/configStore';
 import { useOverlayStore } from '../stores/overlayStore';
 import { useTeamsStore } from '../stores/teamsStore';
@@ -13,7 +13,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const initialize = useOverlayStore((s) => s.initialize);
   const loadTeams = useTeamsStore((s) => s.loadTeams);
   const loadConfig = useConfigStore((s) => s.loadConfig);
-  const [initialized, setInitialized] = React.useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     async function initAll() {

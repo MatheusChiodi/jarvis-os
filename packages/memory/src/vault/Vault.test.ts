@@ -165,52 +165,48 @@ describe('Vault', () => {
   });
 
   it('should list notes with filters', async () => {
-    const mockStep = vi
-      .fn()
-      .mockReturnValueOnce(true)
-      .mockReturnValueOnce(true)
-      .mockReturnValueOnce(false);
-    const mockGetAsObject = vi
-      .fn()
-      .mockReturnValueOnce({
-        id: 'note-1',
-        project_id: 'test-project',
-        type: 'memory',
-        title: 'Memory Note',
-        summary: 'A memory note',
-        content: 'Memory content',
-        tags: JSON.stringify(['test']),
-        agent: 'agent-1',
-        task_id: null,
-        wikilinks: JSON.stringify([]),
-        pinned: 0,
-        archived: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        path: 'note-1.md',
-      })
-      .mockReturnValueOnce({
-        id: 'note-2',
-        project_id: 'test-project',
-        type: 'decision',
-        title: 'Decision Note',
-        summary: 'A decision note',
-        content: 'Decision content',
-        tags: JSON.stringify(['test']),
-        agent: 'agent-1',
-        task_id: null,
-        wikilinks: JSON.stringify([]),
-        pinned: 0,
-        archived: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        path: 'note-2.md',
-      });
+    const note1 = {
+      id: 'note-1',
+      project_id: 'test-project',
+      type: 'memory',
+      title: 'Memory Note',
+      summary: 'A memory note',
+      content: 'Memory content',
+      tags: JSON.stringify(['test']),
+      agent: 'agent-1',
+      task_id: null,
+      wikilinks: JSON.stringify([]),
+      pinned: 0,
+      archived: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      path: 'note-1.md',
+    };
+    const note2 = {
+      id: 'note-2',
+      project_id: 'test-project',
+      type: 'decision',
+      title: 'Decision Note',
+      summary: 'A decision note',
+      content: 'Decision content',
+      tags: JSON.stringify(['test']),
+      agent: 'agent-1',
+      task_id: null,
+      wikilinks: JSON.stringify([]),
+      pinned: 0,
+      archived: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      path: 'note-2.md',
+    };
+
+    const mockStepAll = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(true).mockReturnValueOnce(false);
+    const mockGetAsObjectAll = vi.fn().mockReturnValueOnce(note1).mockReturnValueOnce(note2);
     mockDb.prepare.mockReturnValue({
       run: vi.fn(),
       bind: vi.fn(),
-      step: mockStep,
-      getAsObject: mockGetAsObject,
+      step: mockStepAll,
+      getAsObject: mockGetAsObjectAll,
       free: vi.fn(),
     });
 
@@ -250,12 +246,42 @@ describe('Vault', () => {
       content: 'Decision content',
     });
 
+    const mockStepListAll = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(true).mockReturnValueOnce(false);
+    const mockGetAsObjectListAll = vi.fn().mockReturnValueOnce(note1).mockReturnValueOnce(note2);
+    mockDb.prepare.mockReturnValue({
+      run: vi.fn(),
+      bind: vi.fn(),
+      step: mockStepListAll,
+      getAsObject: mockGetAsObjectListAll,
+      free: vi.fn(),
+    });
+
     const allNotes = await listNotes(vault, {});
     expect(allNotes.length).toBe(2);
+
+    const mockStepMemory = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false);
+    const mockGetAsObjectMemory = vi.fn().mockReturnValueOnce(note1);
+    mockDb.prepare.mockReturnValue({
+      run: vi.fn(),
+      bind: vi.fn(),
+      step: mockStepMemory,
+      getAsObject: mockGetAsObjectMemory,
+      free: vi.fn(),
+    });
 
     const memoryNotes = await listNotes(vault, { type: 'memory' });
     expect(memoryNotes.length).toBe(1);
     expect(memoryNotes[0].frontmatter.type).toBe('memory');
+
+    const mockStepDecision = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false);
+    const mockGetAsObjectDecision = vi.fn().mockReturnValueOnce(note2);
+    mockDb.prepare.mockReturnValue({
+      run: vi.fn(),
+      bind: vi.fn(),
+      step: mockStepDecision,
+      getAsObject: mockGetAsObjectDecision,
+      free: vi.fn(),
+    });
 
     const decisionNotes = await listNotes(vault, { type: 'decision' });
     expect(decisionNotes.length).toBe(1);
@@ -825,8 +851,7 @@ describe('Vault', () => {
   });
 
   it('should handle hook state', async () => {
-    const mockStep = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false);
-    const mockGetAsObject = vi.fn().mockReturnValue({
+    const hookStateRow = {
       id: 'hook-1',
       project_id: 'test-project',
       hook_type: 'testHook',
@@ -836,16 +861,29 @@ describe('Vault', () => {
       last_triggered_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
+    };
+
+    const mockStepGetExisting = vi.fn().mockReturnValueOnce(false);
     mockDb.prepare.mockReturnValue({
       run: vi.fn(),
       bind: vi.fn(),
-      step: mockStep,
-      getAsObject: mockGetAsObject,
+      step: mockStepGetExisting,
+      getAsObject: vi.fn(),
       free: vi.fn(),
     });
 
     await setHookState(vault, 'testHook', 'agent-1', { key: 'value' }, 'task-1');
+
+    const mockStepGet = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false);
+    const mockGetAsObject = vi.fn().mockReturnValueOnce(hookStateRow);
+    mockDb.prepare.mockReturnValue({
+      run: vi.fn(),
+      bind: vi.fn(),
+      step: mockStepGet,
+      getAsObject: mockGetAsObject,
+      free: vi.fn(),
+    });
+
     const state = await getHookState(vault, 'testHook', 'agent-1');
 
     expect(state).not.toBeNull();

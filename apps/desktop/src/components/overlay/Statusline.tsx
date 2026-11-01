@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { AlertTriangle, Brain, CheckCircle, Database, DollarSign, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useConfigStore } from '../../stores/configStore';
 import { useTeamsStore } from '../../stores/teamsStore';
 
 interface StatuslineData {
@@ -13,7 +12,6 @@ interface StatuslineData {
 }
 
 export function Statusline() {
-  const { config } = useConfigStore();
   const { activeTeamId } = useTeamsStore();
   const [data, setData] = useState<StatuslineData | null>(null);
   const [connected, setConnected] = useState(false);
@@ -21,7 +19,7 @@ export function Statusline() {
   useEffect(() => {
     const updateStatusline = async () => {
       try {
-        const result = await invoke('get_statusline_data', { projectId: activeTeamId });
+        const result = await invoke<StatuslineData>('get_statusline_data', { projectId: activeTeamId });
         setData(result);
         setConnected(true);
       } catch {

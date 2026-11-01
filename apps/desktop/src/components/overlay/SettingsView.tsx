@@ -31,10 +31,12 @@ const sections = [
   { id: 'advanced', label: 'Advanced', icon: Terminal },
 ] as const;
 
+type SettingsSection = (typeof sections)[number]['id'];
+
 export function SettingsView() {
   const { config, updateConfig, saveConfig } = useConfigStore();
   const { teams } = useTeamsStore();
-  const [activeSection, setActiveSection] = useState(sections[0].id);
+  const [activeSection, setActiveSection] = useState<SettingsSection>(sections[0].id);
   const [saving, setSaving] = useState(false);
   const [hotkeyInput, setHotkeyInput] = useState(config.hotkey);
   const [listeningHotkey, setListeningHotkey] = useState(false);
@@ -104,18 +106,12 @@ export function SettingsView() {
           {activeSection === 'voice' && <VoiceSettings config={config} onUpdate={updateConfig} />}
           {activeSection === 'video' && <VideoSettings config={config} onUpdate={updateConfig} />}
           {activeSection === 'pixel' && <PixelSettings config={config} onUpdate={updateConfig} />}
-          {activeSection === 'security' && (
-            <SecuritySettings config={config} onUpdate={updateConfig} />
-          )}
-          {activeSection === 'notifications' && (
-            <NotificationSettings config={config} onUpdate={updateConfig} />
-          )}
+          {activeSection === 'security' && <SecuritySettings />}
+          {activeSection === 'notifications' && <NotificationSettings />}
           {activeSection === 'appearance' && (
             <AppearanceSettings config={config} onUpdate={updateConfig} />
           )}
-          {activeSection === 'advanced' && (
-            <AdvancedSettings config={config} onUpdate={updateConfig} />
-          )}
+          {activeSection === 'advanced' && <AdvancedSettings />}
         </div>
       </div>
     </div>
@@ -543,7 +539,7 @@ function PixelSettings({ config, onUpdate }: any) {
   );
 }
 
-function SecuritySettings({ config, onUpdate }: any) {
+function SecuritySettings() {
   return (
     <div className="space-y-6 max-w-2xl">
       <SettingGroup
@@ -603,7 +599,7 @@ function SecuritySettings({ config, onUpdate }: any) {
   );
 }
 
-function NotificationSettings({ config, onUpdate }: any) {
+function NotificationSettings() {
   return (
     <div className="space-y-6 max-w-2xl">
       <SettingGroup
@@ -708,7 +704,7 @@ function AppearanceSettings({ config, onUpdate }: any) {
   );
 }
 
-function AdvancedSettings({ config, onUpdate }: any) {
+function AdvancedSettings() {
   return (
     <div className="space-y-6 max-w-2xl">
       <SettingGroup title="Developer" description="Advanced options for developers">

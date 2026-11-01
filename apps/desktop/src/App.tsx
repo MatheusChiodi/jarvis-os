@@ -7,7 +7,7 @@ import { useOverlayStore } from './stores/overlayStore';
 import { useTeamsStore } from './stores/teamsStore';
 
 function App() {
-  const { isOpen, setOpen, initialize } = useOverlayStore();
+  const { isOpen, initialize } = useOverlayStore();
   const { loadTeams } = useTeamsStore();
   const { loadConfig } = useConfigStore();
 
@@ -21,14 +21,14 @@ function App() {
   }, [loadConfig, loadTeams, initialize]);
 
   useEffect(() => {
-    const unlisten = invoke('listen', { event: 'toggle-overlay' }).then((unlistenFn) => {
-      unlistenFn(() => {
-        useOverlayStore.getState().toggle();
-      });
+    let unlistenFn: (() => void) | null = null;
+    invoke<() => void>('listen', { event: 'toggle-overlay' }).then((fn) => {
+      unlistenFn = fn;
+      fn();
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      if (unlistenFn) unlistenFn();
     };
   }, []);
 

@@ -80,6 +80,8 @@ interface ConfigStore {
   resetConfig: () => Promise<void>;
 }
 
+export type { AppConfig };
+
 export const useConfigStore = create<ConfigStore>()(
   persist(
     immer((set, get) => ({

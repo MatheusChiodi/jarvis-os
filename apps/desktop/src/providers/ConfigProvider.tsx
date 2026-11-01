@@ -1,9 +1,9 @@
 import { type ReactNode, createContext, useContext, useEffect } from 'react';
-import { useConfigStore } from '../stores/configStore';
+import { useConfigStore, type AppConfig } from '../stores/configStore';
 
 interface ConfigContextValue {
-  config: ReturnType<typeof useConfigStore>['config'];
-  updateConfig: ReturnType<typeof useConfigStore>['updateConfig'];
+  config: AppConfig;
+  updateConfig: (patch: Partial<AppConfig>) => Promise<void>;
 }
 
 const ConfigContext = createContext<ConfigContextValue | null>(null);

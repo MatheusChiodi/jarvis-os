@@ -13,6 +13,7 @@ interface TeamsStore {
   deleteTeam: (id: string) => Promise<void>;
   setActiveTeam: (id: string | undefined) => void;
   getTeam: (id: string) => Team | undefined;
+  saveTeams: () => Promise<void>;
 }
 
 const defaultTeam: Team = {
@@ -65,7 +66,7 @@ export const useTeamsStore = create<TeamsStore>()(
           if (savedTeams && savedTeams.length > 0) {
             set((state) => {
               state.teams = savedTeams;
-              state.activeTeamId = savedTeams[0].id;
+              state.activeTeamId = savedTeams[0]?.id;
             });
           } else {
             // Initialize with default team
@@ -114,7 +115,8 @@ export const useTeamsStore = create<TeamsStore>()(
         set((state) => {
           const index = state.teams.findIndex((t) => t.id === id);
           if (index !== -1) {
-            state.teams[index] = { ...state.teams[index], ...patch, updatedAt: nowISO() };
+            const { id: _, createdAt, ...restPatch } = patch;
+            state.teams[index] = { ...state.teams[index], ...restPatch, updatedAt: nowISO() } as Team;
           }
         });
         await get().saveTeams();
@@ -124,7 +126,7 @@ export const useTeamsStore = create<TeamsStore>()(
         set((state) => {
           state.teams = state.teams.filter((t) => t.id !== id);
           if (state.activeTeamId === id) {
-            state.activeTeamId = state.teams[0]?.id;
+            state.activeTeamId = state.teams[0]?.id ?? undefined;
           }
         });
         await get().saveTeams();

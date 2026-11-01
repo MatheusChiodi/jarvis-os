@@ -10,6 +10,7 @@ interface OverlayStore extends OverlayState {
   setActiveTeam: (teamId: string | undefined) => void;
   setActiveView: (view: OverlayView) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  toggleSidebar: () => void;
   initialize: () => Promise<void>;
 }
 
@@ -47,6 +48,10 @@ export const useOverlayStore = create<OverlayStore>()(
       setSidebarCollapsed: (collapsed) =>
         set((state) => {
           state.sidebarCollapsed = collapsed;
+        }),
+      toggleSidebar: () =>
+        set((state) => {
+          state.sidebarCollapsed = !state.sidebarCollapsed;
         }),
 
       initialize: async () => {

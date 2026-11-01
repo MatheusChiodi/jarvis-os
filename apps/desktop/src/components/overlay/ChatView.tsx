@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { Bot, Mic, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useOverlayStore } from '../../stores/overlayStore';
 import { useTeamsStore } from '../../stores/teamsStore';
 
 interface Message {
@@ -14,7 +13,6 @@ interface Message {
 
 export function ChatView() {
   const { activeTeamId, teams } = useTeamsStore();
-  const { activeView } = useOverlayStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +40,7 @@ export function ChatView() {
     setIsLoading(true);
 
     try {
-      const response = await invoke('send_chat_message', {
+      const response = await invoke<string>('send_chat_message', {
         teamId: activeTeamId,
         message: currentInput,
       });
@@ -54,7 +52,7 @@ export function ChatView() {
           content: response,
           timestamp: new Date(),
           agentId: 'planner',
-        },
+        } satisfies Message,
       ]);
     } catch (error) {
       setMessages((prev) => [
@@ -109,7 +107,6 @@ export function ChatView() {
             onKeyDown={handleKeyDown}
             placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
             rows={1}
-            maxRows={6}
             className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             disabled={isLoading}
           />

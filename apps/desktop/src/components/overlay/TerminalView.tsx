@@ -1,15 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import { Terminal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useOverlayStore } from '../../stores/overlayStore';
 
 export function TerminalView() {
-  const { bounds } = useOverlayStore();
   const terminalRef = useRef<HTMLDivElement>(null);
   const [initialized, setInitialized] = useState(false);
   const [terminals, setTerminals] = useState<Map<number, any>>(new Map());
   const [activeTab, setActiveTab] = useState(0);
-  const [nextTabId, setNextTabId] = useState(1);
 
   useEffect(() => {
     if (!initialized && terminalRef.current) {
@@ -31,7 +28,6 @@ export function TerminalView() {
         background: '#1e1e1e',
         foreground: '#d4d4d4',
         cursor: '#ffffff',
-        selection: '#264f78',
         black: '#1e1e1e',
         red: '#f44747',
         green: '#6a9955',
@@ -64,7 +60,7 @@ export function TerminalView() {
     fitAddon.fit();
 
     // Connect to shell via Tauri
-    const _shell = await invoke('spawn_shell', { cols: term.cols, rows: term.rows });
+    await invoke('spawn_shell', { cols: term.cols, rows: term.rows });
     // TODO: Implement proper shell communication
 
     setTerminals((prev) => new Map(prev).set(0, { term, fitAddon }));
@@ -72,8 +68,6 @@ export function TerminalView() {
   };
 
   const addTab = () => {
-    const _id = nextTabId;
-    setNextTabId((n) => n + 1);
     // TODO: Create new terminal
   };
 
