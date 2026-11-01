@@ -1,9 +1,9 @@
-import type { Tool, ToolRisk } from '@jarvis-os/protocol';
-import { listNotes as ftsSearch, saveNote, type Vault } from '@jarvis-os/memory';
+import { type ChildProcess, spawn } from 'node:child_process';
+import { existsSync, realpathSync } from 'node:fs';
+import { isAbsolute, relative, resolve } from 'node:path';
+import { type Vault, listNotes as ftsSearch, saveNote } from '@jarvis-os/memory';
 import type { ProgressiveDisclosure, VectorIndex } from '@jarvis-os/memory';
-import { realpathSync, existsSync } from 'node:fs';
-import { resolve, relative, isAbsolute } from 'node:path';
-import { spawn, type ChildProcess } from 'node:child_process';
+import type { Tool, ToolRisk } from '@jarvis-os/protocol';
 import pino from 'pino';
 
 const logger = pino({ name: 'tools' });
@@ -30,31 +30,66 @@ export interface ToolExecutionContext {
 // ============================================================================
 
 const SAFE_COMMANDS = [
-  'git status', 'git log', 'git diff', 'git show', 'git branch',
-  'ls', 'dir', 'pwd', 'cat', 'type', 'Get-Content', 'Get-ChildItem',
-  'rg', 'grep', 'node -v', 'pnpm -v', 'pnpm test', 'pnpm lint', 'pnpm typecheck'
+  'git status',
+  'git log',
+  'git diff',
+  'git show',
+  'git branch',
+  'ls',
+  'dir',
+  'pwd',
+  'cat',
+  'type',
+  'Get-Content',
+  'Get-ChildItem',
+  'rg',
+  'grep',
+  'node -v',
+  'pnpm -v',
+  'pnpm test',
+  'pnpm lint',
+  'pnpm typecheck',
 ];
 
 const DANGEROUS_PATTERNS = [
-  'rm -rf', 'rm -r', 'Remove-Item', 'del /', 'rd /s',
-  'format', 'shutdown', 'reg ', 'git push', 'git reset --hard',
-  'git clean', 'curl', '| sh', 'iwr', '| iex', 'Invoke-Expression',
-  'npm publish', 'pnpm publish'
+  'rm -rf',
+  'rm -r',
+  'Remove-Item',
+  'del /',
+  'rd /s',
+  'format',
+  'shutdown',
+  'reg ',
+  'git push',
+  'git reset --hard',
+  'git clean',
+  'curl',
+  '| sh',
+  'iwr',
+  '| iex',
+  'Invoke-Expression',
+  'npm publish',
+  'pnpm publish',
 ];
 
 const SENSITIVE_FILE_PATTERNS = [
-  '.env', '.pem', '.key', 'id_rsa', 'id_ed25519',
-  '.jarvis-os/daemon.token', '.ssh/'
+  '.env',
+  '.pem',
+  '.key',
+  'id_rsa',
+  'id_ed25519',
+  '.jarvis-os/daemon.token',
+  '.ssh/',
 ];
 
 function isSafeCommand(cmd: string): boolean {
   const trimmed = cmd.trim();
-  return SAFE_COMMANDS.some(safe => trimmed.startsWith(safe));
+  return SAFE_COMMANDS.some((safe) => trimmed.startsWith(safe));
 }
 
 function isDangerousCommand(cmd: string): boolean {
   const trimmed = cmd.trim().toLowerCase();
-  return DANGEROUS_PATTERNS.some(pattern => trimmed.includes(pattern.toLowerCase()));
+  return DANGEROUS_PATTERNS.some((pattern) => trimmed.includes(pattern.toLowerCase()));
 }
 
 function hasShellOperators(cmd: string): boolean {
@@ -62,13 +97,16 @@ function hasShellOperators(cmd: string): boolean {
 }
 
 function splitCommands(cmd: string): string[] {
-  return cmd.split(/[;&|]/).map(s => s.trim()).filter(Boolean);
+  return cmd
+    .split(/[;&|]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function classifyShellCommand(cmd: string): ToolRisk {
   const segments = splitCommands(cmd);
   let maxRisk: ToolRisk = 'safe';
-  
+
   for (const segment of segments) {
     if (isDangerousCommand(segment)) {
       return 'dangerous';
@@ -77,7 +115,7 @@ function classifyShellCommand(cmd: string): ToolRisk {
       maxRisk = 'dangerous';
     }
   }
-  
+
   return maxRisk;
 }
 
@@ -91,7 +129,7 @@ export function resolveWorkspacePath(path: string, workspaces: string[]): string
   }
 
   const resolved = realpathSync(path);
-  
+
   for (const ws of workspaces) {
     const wsResolved = realpathSync(ws);
     const rel = relative(wsResolved, resolved);
@@ -105,7 +143,7 @@ export function resolveWorkspacePath(path: string, workspaces: string[]): string
 
 function isSensitivePath(path: string): boolean {
   const normalized = path.replace(/\\/g, '/');
-  return SENSITIVE_FILE_PATTERNS.some(pattern => 
+  return SENSITIVE_FILE_PATTERNS.some((pattern) =>
     normalized.includes(pattern.replace(/\\/g, '/'))
   );
 }
@@ -132,7 +170,12 @@ interface AuditEntry {
   outputChars?: number;
 }
 
-const auditLogPath = resolve(process.env.HOME || process.env.USERPROFILE || '', '.jarvis-os', 'logs', 'audit.jsonl');
+const auditLogPath = resolve(
+  process.env.HOME || process.env.USERPROFILE || '',
+  '.jarvis-os',
+  'logs',
+  'audit.jsonl'
+);
 
 function writeAuditEntry(entry: AuditEntry): void {
   try {
@@ -140,7 +183,7 @@ function writeAuditEntry(entry: AuditEntry): void {
     if (!existsSync(dir)) {
       require('node:fs').mkdirSync(dir, { recursive: true });
     }
-    require('node:fs').appendFileSync(auditLogPath, JSON.stringify(entry) + '\n');
+    require('node:fs').appendFileSync(auditLogPath, `${JSON.stringify(entry)}\n`);
   } catch (error) {
     logger.error({ error }, 'Failed to write audit log');
   }
@@ -151,21 +194,19 @@ function writeAuditEntry(entry: AuditEntry): void {
 // ============================================================================
 
 async function executeShellCommand(
-  cmd: string, 
-  cwd: string, 
+  cmd: string,
+  cwd: string,
   timeoutMs: number,
   maxOutputChars: number
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve, reject) => {
     const isWindows = process.platform === 'win32';
     const shell = isWindows ? 'powershell.exe' : 'bash';
-    const args = isWindows 
-      ? ['-NoProfile', '-NonInteractive', '-Command', cmd]
-      : ['-lc', cmd];
+    const args = isWindows ? ['-NoProfile', '-NonInteractive', '-Command', cmd] : ['-lc', cmd];
 
-    const child: ChildProcess = spawn(shell, args, { 
-      cwd, 
-      timeout: timeoutMs
+    const child: ChildProcess = spawn(shell, args, {
+      cwd,
+      timeout: timeoutMs,
     });
 
     let stdout = '';
@@ -180,7 +221,7 @@ async function executeShellCommand(
     child.stdout?.on('data', (data: Buffer) => {
       stdout += data.toString();
       if (stdout.length > maxOutputChars) {
-        stdout = stdout.slice(0, maxOutputChars) + `\n…[truncated ${stdout.length - maxOutputChars} characters]`;
+        stdout = `${stdout.slice(0, maxOutputChars)}\n…[truncated ${stdout.length - maxOutputChars} characters]`;
       }
     });
 
@@ -215,10 +256,10 @@ export const toolDefinitions: Tool[] = [
     parameters: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: 'Absolute path to the file' }
+        path: { type: 'string', description: 'Absolute path to the file' },
       },
-      required: ['path']
-    }
+      required: ['path'],
+    },
   },
   {
     name: 'fs_write',
@@ -227,10 +268,10 @@ export const toolDefinitions: Tool[] = [
       type: 'object',
       properties: {
         path: { type: 'string', description: 'Absolute path to the file' },
-        content: { type: 'string', description: 'File content' }
+        content: { type: 'string', description: 'File content' },
       },
-      required: ['path', 'content']
-    }
+      required: ['path', 'content'],
+    },
   },
   {
     name: 'fs_list',
@@ -238,10 +279,10 @@ export const toolDefinitions: Tool[] = [
     parameters: {
       type: 'object',
       properties: {
-        path: { type: 'string', description: 'Absolute path to the directory' }
+        path: { type: 'string', description: 'Absolute path to the directory' },
       },
-      required: ['path']
-    }
+      required: ['path'],
+    },
   },
   {
     name: 'shell_run',
@@ -250,10 +291,10 @@ export const toolDefinitions: Tool[] = [
       type: 'object',
       properties: {
         command: { type: 'string', description: 'Command to execute' },
-        cwd: { type: 'string', description: 'Working directory (must be within workspace)' }
+        cwd: { type: 'string', description: 'Working directory (must be within workspace)' },
       },
-      required: ['command', 'cwd']
-    }
+      required: ['command', 'cwd'],
+    },
   },
   {
     name: 'memory_search',
@@ -264,10 +305,10 @@ export const toolDefinitions: Tool[] = [
         query: { type: 'string', description: 'Search query' },
         limit: { type: 'number', description: 'Maximum results', default: 20 },
         type: { type: 'string', description: 'Filter by note type' },
-        agent: { type: 'string', description: 'Filter by agent' }
+        agent: { type: 'string', description: 'Filter by agent' },
       },
-      required: ['query']
-    }
+      required: ['query'],
+    },
   },
   {
     name: 'memory_save',
@@ -277,14 +318,17 @@ export const toolDefinitions: Tool[] = [
       properties: {
         title: { type: 'string', description: 'Note title' },
         content: { type: 'string', description: 'Note content' },
-        type: { type: 'string', enum: ['memory', 'decision', 'learning', 'communication', 'state'] },
+        type: {
+          type: 'string',
+          enum: ['memory', 'decision', 'learning', 'communication', 'state'],
+        },
         tags: { type: 'array', items: { type: 'string' }, default: [] },
         agent: { type: 'string', description: 'Agent identifier' },
-        taskId: { type: 'string', description: 'Task identifier' }
+        taskId: { type: 'string', description: 'Task identifier' },
       },
-      required: ['title', 'content', 'type', 'agent']
-    }
-  }
+      required: ['title', 'content', 'type', 'agent'],
+    },
+  },
 ];
 
 // ============================================================================
@@ -292,21 +336,21 @@ export const toolDefinitions: Tool[] = [
 // ============================================================================
 
 export async function executeTool(
-  name: string, 
-  args: Record<string, unknown>, 
+  name: string,
+  args: Record<string, unknown>,
   context: ToolExecutionContext
 ): Promise<{ output: string; risk: ToolRisk; riskReason?: string }> {
   const startTime = Date.now();
-  
+
   try {
     switch (name) {
       case 'fs_read': {
         const path = resolveWorkspacePath(args.path as string, context.config.workspaces);
         const risk = classifyFileOperation(path, false);
-        
+
         const fs = await import('node:fs/promises');
         const content = await fs.readFile(path, 'utf-8');
-        
+
         writeAuditEntry({
           ts: new Date().toISOString(),
           sessionId: context.sessionId,
@@ -315,19 +359,19 @@ export async function executeTool(
           risk,
           decision: 'auto',
           durationMs: Date.now() - startTime,
-          outputChars: content.length
+          outputChars: content.length,
         });
-        
+
         return { output: content, risk };
       }
 
       case 'fs_write': {
         const path = resolveWorkspacePath(args.path as string, context.config.workspaces);
         const risk = classifyFileOperation(path, true);
-        
+
         const fs = await import('node:fs/promises');
         await fs.writeFile(path, args.content as string, 'utf-8');
-        
+
         writeAuditEntry({
           ts: new Date().toISOString(),
           sessionId: context.sessionId,
@@ -336,24 +380,24 @@ export async function executeTool(
           risk,
           decision: risk === 'write' ? 'auto' : 'approved',
           durationMs: Date.now() - startTime,
-          outputChars: (args.content as string).length
+          outputChars: (args.content as string).length,
         });
-        
+
         return { output: `Written ${(args.content as string).length} bytes to ${path}`, risk };
       }
 
       case 'fs_list': {
         const path = resolveWorkspacePath(args.path as string, context.config.workspaces);
         const risk = classifyFileOperation(path, false);
-        
+
         const fs = await import('node:fs/promises');
         const entries = await fs.readdir(path, { withFileTypes: true });
-        const files = entries.map(e => ({
+        const files = entries.map((e) => ({
           name: e.name,
           isDirectory: e.isDirectory(),
-          isFile: e.isFile()
+          isFile: e.isFile(),
         }));
-        
+
         writeAuditEntry({
           ts: new Date().toISOString(),
           sessionId: context.sessionId,
@@ -362,9 +406,9 @@ export async function executeTool(
           risk,
           decision: 'auto',
           durationMs: Date.now() - startTime,
-          outputChars: JSON.stringify(files).length
+          outputChars: JSON.stringify(files).length,
         });
-        
+
         return { output: JSON.stringify(files, null, 2), risk };
       }
 
@@ -372,16 +416,16 @@ export async function executeTool(
         const cwd = resolveWorkspacePath(args.cwd as string, context.config.workspaces);
         const command = args.command as string;
         const risk = classifyShellCommand(command);
-        
+
         const result = await executeShellCommand(
-          command, 
-          cwd, 
-          120000, 
+          command,
+          cwd,
+          120000,
           context.config.maxToolOutputChars
         );
-        
+
         const output = result.stdout + (result.stderr ? `\n[stderr]\n${result.stderr}` : '');
-        
+
         writeAuditEntry({
           ts: new Date().toISOString(),
           sessionId: context.sessionId,
@@ -391,13 +435,13 @@ export async function executeTool(
           decision: risk === 'dangerous' ? 'approved' : 'auto',
           durationMs: Date.now() - startTime,
           exitCode: result.exitCode,
-          outputChars: output.length
+          outputChars: output.length,
         });
-        
-        return { 
-          output: output.slice(0, context.config.maxToolOutputChars), 
+
+        return {
+          output: output.slice(0, context.config.maxToolOutputChars),
           risk,
-          riskReason: risk === 'dangerous' ? 'Command classified as dangerous' : undefined
+          riskReason: risk === 'dangerous' ? 'Command classified as dangerous' : undefined,
         };
       }
 
@@ -407,16 +451,16 @@ export async function executeTool(
           query: args.query as string,
           limit: (args.limit as number) || 20,
           type: args.type as any,
-          agent: args.agent as string
+          agent: args.agent as string,
         };
-        
+
         let results;
         if (context.progressiveDisclosure) {
           results = await context.progressiveDisclosure.searchIndex(options.query, options.limit);
         } else {
           results = await ftsSearch(context.vault, options);
         }
-        
+
         writeAuditEntry({
           ts: new Date().toISOString(),
           sessionId: context.sessionId,
@@ -425,15 +469,15 @@ export async function executeTool(
           risk,
           decision: 'auto',
           durationMs: Date.now() - startTime,
-          outputChars: JSON.stringify(results).length
+          outputChars: JSON.stringify(results).length,
         });
-        
+
         return { output: JSON.stringify(results, null, 2), risk };
       }
 
       case 'memory_save': {
         const risk: ToolRisk = 'write';
-        
+
         const note = await saveNote(context.vault, {
           frontmatter: {
             id: crypto.randomUUID(),
@@ -448,11 +492,11 @@ export async function executeTool(
             updatedAt: new Date().toISOString(),
             wikilinks: [],
             pinned: false,
-            archived: false
+            archived: false,
           },
-          content: args.content as string
+          content: args.content as string,
         });
-        
+
         writeAuditEntry({
           ts: new Date().toISOString(),
           sessionId: context.sessionId,
@@ -461,9 +505,9 @@ export async function executeTool(
           risk,
           decision: 'auto',
           durationMs: Date.now() - startTime,
-          outputChars: JSON.stringify(note).length
+          outputChars: JSON.stringify(note).length,
         });
-        
+
         return { output: `Saved note ${note.frontmatter.id}`, risk };
       }
 
@@ -478,21 +522,25 @@ export async function executeTool(
       args,
       risk: 'dangerous',
       decision: 'denied',
-      durationMs: Date.now() - startTime
+      durationMs: Date.now() - startTime,
     });
     throw error;
   }
 }
 
 export function getToolDefinition(name: string): Tool | undefined {
-  return toolDefinitions.find(t => t.name === name);
+  return toolDefinitions.find((t) => t.name === name);
 }
 
 export function getAllToolDefinitions(): Tool[] {
   return toolDefinitions;
 }
 
-export function classifyToolRisk(name: string, args: Record<string, unknown>, workspaces: string[]): ToolRisk {
+export function classifyToolRisk(
+  name: string,
+  args: Record<string, unknown>,
+  workspaces: string[]
+): ToolRisk {
   switch (name) {
     case 'fs_read':
     case 'fs_list':

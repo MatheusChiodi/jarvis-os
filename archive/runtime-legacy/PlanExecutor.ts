@@ -1,9 +1,8 @@
-import { generateId, nowISO } from '@jarvis-os/core';
-import type { Plan, PlanPhase, Task, TaskResult, ExecutionResult } from '@jarvis-os/core';
-import { WorktreeManager } from '../git/WorktreeManager';
-import { TddEnforcer } from '../tdd/TddEnforcer';
-import { CodeReviewer } from '../review/CodeReviewer';
-import { VerificationRunner } from '../verification/VerificationRunner';
+import type { ExecutionResult, Plan, PlanPhase, Task, TaskResult } from '@jarvis-os/core';
+import type { WorktreeManager } from '../git/WorktreeManager';
+import type { CodeReviewer } from '../review/CodeReviewer';
+import type { TddEnforcer } from '../tdd/TddEnforcer';
+import type { VerificationRunner } from '../verification/VerificationRunner';
 
 interface ExecutorOptions {
   worktreeManager: WorktreeManager;
@@ -50,7 +49,7 @@ export class PlanExecutor {
         results.push(...phaseResults);
 
         // Check if all tasks passed
-        const allPassed = phaseResults.every(r => r.success);
+        const allPassed = phaseResults.every((r) => r.success);
         if (!allPassed) {
           return {
             planId: plan.id,
@@ -62,10 +61,9 @@ export class PlanExecutor {
 
         // Commit phase changes
         await this.commitPhase(worktreePath, phase.id);
-
       } finally {
         // Cleanup worktree (keep if failed for debugging)
-        const allPassed = phaseResults.every(r => r.success);
+        const allPassed = phaseResults.every((r) => r.success);
         if (allPassed) {
           await this.worktreeManager.removeWorktree(branchName);
         } else {
@@ -98,13 +96,12 @@ export class PlanExecutor {
     const completed = new Set<string>();
 
     // Build dependency graph
-    const dag = this.buildTaskDag(tasks);
+    const _dag = this.buildTaskDag(tasks);
 
     while (completed.size < tasks.length) {
       // Find ready tasks (all deps completed)
-      const ready = tasks.filter(t =>
-        !completed.has(t.id) &&
-        t.dependencies.every(d => completed.has(d))
+      const ready = tasks.filter(
+        (t) => !completed.has(t.id) && t.dependencies.every((d) => completed.has(d))
       );
 
       if (ready.length === 0) {
@@ -116,9 +113,7 @@ export class PlanExecutor {
       const batches = this.chunkArray(ready, concurrency);
 
       for (const batch of batches) {
-        const batchPromises = batch.map(task =>
-          this.executeTask(task, worktreePath, options)
-        );
+        const batchPromises = batch.map((task) => this.executeTask(task, worktreePath, options));
         const batchResults = await Promise.all(batchPromises);
 
         for (const result of batchResults) {
@@ -138,7 +133,7 @@ export class PlanExecutor {
   private async executeTask(
     task: Task,
     worktreePath: string,
-    options: ExecuteOptions
+    _options: ExecuteOptions
   ): Promise<TaskResult> {
     const start = Date.now();
 
@@ -146,7 +141,12 @@ export class PlanExecutor {
       // TDD Loop: Red -> Green -> Refactor
       const tddResult = await this.tddEnforcer.enforce(task, worktreePath);
       if (!tddResult.success) {
-        return { taskId: task.id, success: false, error: tddResult.error, duration: Date.now() - start };
+        return {
+          taskId: task.id,
+          success: false,
+          error: tddResult.error,
+          duration: Date.now() - start,
+        };
       }
 
       // Code Review
@@ -155,7 +155,7 @@ export class PlanExecutor {
         return {
           taskId: task.id,
           success: false,
-          error: `Code review failed: ${reviewResult.issues.map(i => i.message).join(', ')}`,
+          error: `Code review failed: ${reviewResult.issues.map((i) => i.message).join(', ')}`,
           duration: Date.now() - start,
         };
       }

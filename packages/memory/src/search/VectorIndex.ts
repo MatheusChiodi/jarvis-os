@@ -1,7 +1,7 @@
-import { ChromaClient } from 'chromadb';
-import { pipeline, env } from '@xenova/transformers';
-import type { Vault } from '../vault/Vault.js';
 import type { SearchIndexItem } from '@jarvis-os/core';
+import { env, pipeline } from '@xenova/transformers';
+import { ChromaClient } from 'chromadb';
+import type { Vault } from '../vault/Vault.js';
 
 env.allowLocalModels = true;
 env.useBrowserCache = false;
@@ -54,7 +54,11 @@ export interface SearchResult {
 }
 
 export class VectorIndexError extends Error {
-  constructor(message: string, public readonly code: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly cause?: Error
+  ) {
     super(message);
     this.name = 'VectorIndexError';
   }
@@ -81,7 +85,10 @@ export async function createVectorIndex(config: VectorIndexConfig): Promise<Vect
   return index;
 }
 
-export async function openVectorIndex(projectId: string, persistPath?: string): Promise<VectorIndex> {
+export async function openVectorIndex(
+  projectId: string,
+  persistPath?: string
+): Promise<VectorIndex> {
   const client = new ChromaClient({
     path: persistPath || ':memory:',
   });
@@ -110,12 +117,12 @@ export async function embedText(text: string): Promise<Float32Array> {
 export async function embedTexts(texts: string[]): Promise<Float32Array[]> {
   const pipe = await getEmbeddingPipeline();
   const embeddings: Float32Array[] = [];
-  
+
   for (const text of texts) {
     const output = await pipe(text, { pooling: 'mean', normalize: true });
     embeddings.push(Float32Array.from(output.data) as Float32Array);
   }
-  
+
   return embeddings;
 }
 
@@ -188,10 +195,7 @@ export async function removeNote(index: VectorIndex, noteId: string): Promise<vo
   await index.collection.delete({ ids: [noteId] });
 }
 
-export async function search(
-  index: VectorIndex,
-  options: SearchOptions
-): Promise<SearchResult[]> {
+export async function search(index: VectorIndex, options: SearchOptions): Promise<SearchResult[]> {
   if (!index.initialized) {
     throw new VectorIndexError('Vector index not initialized', 'NOT_INITIALIZED');
   }
@@ -212,12 +216,12 @@ export async function search(
   });
 
   const searchResults: SearchResult[] = [];
-  
-  if (results.ids && results.ids[0]) {
+
+  if (results.ids?.[0]) {
     for (let i = 0; i < results.ids[0].length; i++) {
       const distance = results.distances?.[0]?.[i] ?? 1;
       const score = 1 - distance;
-      
+
       if (score >= scoreThreshold) {
         searchResults.push({
           id: results.ids[0][i],
@@ -245,7 +249,10 @@ export async function hybridSearch(
     search(vectorIndex, { query, limit: limit * 2 }),
   ]);
 
-  const combined = new Map<string, { item: SearchIndexItem; ftsScore: number; vectorScore: number }>();
+  const combined = new Map<
+    string,
+    { item: SearchIndexItem; ftsScore: number; vectorScore: number }
+  >();
 
   for (const item of ftsResults) {
     const existing = combined.get(item.id);

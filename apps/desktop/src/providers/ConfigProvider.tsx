@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, ReactNode } from 'react';
+import { type ReactNode, createContext, useContext, useEffect } from 'react';
 import { useConfigStore } from '../stores/configStore';
 
 interface ConfigContextValue {
@@ -16,9 +16,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   }, [loadConfig]);
 
   return (
-    <ConfigContext.Provider value={{ config, updateConfig }}>
-      {children}
-    </ConfigContext.Provider>
+    <ConfigContext.Provider value={{ config, updateConfig }}>{children}</ConfigContext.Provider>
   );
 }
 

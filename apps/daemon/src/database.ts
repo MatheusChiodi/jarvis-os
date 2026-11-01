@@ -1,7 +1,7 @@
-import { DatabaseSync } from 'node:sqlite';
-import { resolve } from 'node:path';
-import { homedir } from 'node:os';
 import { existsSync, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { resolve } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 const DB_DIR = resolve(homedir(), '.jarvis-os');
 const DB_PATH = resolve(DB_DIR, 'jarvis.db');
@@ -98,9 +98,13 @@ function initSchema(db: DatabaseSync): void {
     );
   `);
 
-  const version = db.prepare('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1').get() as { version: number } | undefined;
+  const version = db
+    .prepare('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1')
+    .get() as { version: number } | undefined;
   if (!version || version.version < 1) {
-    db.prepare('INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (1, datetime(\'now\'))').run();
+    db.prepare(
+      "INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (1, datetime('now'))"
+    ).run();
   }
 }
 

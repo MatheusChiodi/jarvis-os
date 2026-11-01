@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, ReactNode } from 'react';
+import { type ReactNode, createContext, useContext, useEffect } from 'react';
+import { useConfigStore } from '../stores/configStore';
 import { useOverlayStore } from '../stores/overlayStore';
 import { useTeamsStore } from '../stores/teamsStore';
-import { useConfigStore } from '../stores/configStore';
 
 interface StoreContextValue {
   initialized: boolean;
@@ -25,11 +25,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     initAll();
   }, [loadConfig, loadTeams, initialize]);
 
-  return (
-    <StoreContext.Provider value={{ initialized }}>
-      {children}
-    </StoreContext.Provider>
-  );
+  return <StoreContext.Provider value={{ initialized }}>{children}</StoreContext.Provider>;
 }
 
 export function useStores() {

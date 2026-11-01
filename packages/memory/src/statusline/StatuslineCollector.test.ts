@@ -174,7 +174,7 @@ describe('StatuslineCollector', () => {
     const cached = collector.getCached();
 
     expect(cached).not.toBeNull();
-    expect(cached!.memory.noteCount).toBe(5);
+    expect(cached?.memory.noteCount).toBe(5);
   });
 
   it('should return null cache initially', () => {

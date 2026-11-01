@@ -1,6 +1,16 @@
-import { FolderOpen, Plus, Settings, Bot, Users, Database, Video, Mic, TrendingUp, Grid } from 'lucide-react';
-import { useTeamsStore } from '../../stores/teamsStore';
+import {
+  Bot,
+  Database,
+  FolderOpen,
+  Grid,
+  Mic,
+  Plus,
+  Settings,
+  TrendingUp,
+  Video,
+} from 'lucide-react';
 import { useOverlayStore } from '../../stores/overlayStore';
+import { useTeamsStore } from '../../stores/teamsStore';
 import { TeamEditor } from './TeamEditor';
 
 const teamIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -45,7 +55,10 @@ export function TeamsSidebar({ teams, activeTeamId }: TeamsSidebarProps) {
             team={team}
             isActive={activeTeamId === team.id}
             onSelect={() => setActiveTeam(team.id)}
-            onEdit={() => { setEditingTeam(team.id); setShowEditor(true); }}
+            onEdit={() => {
+              setEditingTeam(team.id);
+              setShowEditor(true);
+            }}
             onDelete={() => deleteTeam(team.id)}
           />
         ))}
@@ -53,7 +66,10 @@ export function TeamsSidebar({ teams, activeTeamId }: TeamsSidebarProps) {
 
       <div className="p-2 border-t border-gray-200 dark:border-gray-700">
         <button
-          onClick={() => { setEditingTeam(null); setShowEditor(true); }}
+          onClick={() => {
+            setEditingTeam(null);
+            setShowEditor(true);
+          }}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -63,8 +79,11 @@ export function TeamsSidebar({ teams, activeTeamId }: TeamsSidebarProps) {
 
       {showEditor && (
         <TeamEditor
-          team={editingTeam ? teams.find(t => t.id === editingTeam) : null}
-          onClose={() => { setShowEditor(false); setEditingTeam(null); }}
+          team={editingTeam ? teams.find((t) => t.id === editingTeam) : null}
+          onClose={() => {
+            setShowEditor(false);
+            setEditingTeam(null);
+          }}
           onSave={(team) => {
             if (editingTeam) updateTeam(editingTeam, team);
             else createTeam(team);
@@ -102,20 +121,28 @@ function TeamItem({
             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
       >
-        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
+        <Icon
+          className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}
+        />
         <span className="font-medium text-sm truncate">{team.name}</span>
       </button>
 
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
           className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500"
           aria-label="Edit team"
         >
           <Settings className="w-3.5 h-3.5" />
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
           className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500"
           aria-label="Delete team"
         >
@@ -126,5 +153,5 @@ function TeamItem({
   );
 }
 
-import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
+import { useState } from 'react';

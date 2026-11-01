@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.describe('Overlay Window', () => {
   test.beforeEach(async ({ page }) => {
@@ -8,9 +8,9 @@ test.describe('Overlay Window', () => {
   });
 
   test('should show floating button initially', async ({ page }) => {
-    const floatingButton = page.locator('button:has-text("JARVIS-OS")').or(
-      page.locator('button[aria-label="Open JARVIS-OS"]')
-    );
+    const floatingButton = page
+      .locator('button:has-text("JARVIS-OS")')
+      .or(page.locator('button[aria-label="Open JARVIS-OS"]'));
     await expect(floatingButton).toBeVisible();
   });
 
@@ -99,6 +99,8 @@ test.describe('Floating Button Hotkey', () => {
     // Press again to close
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+J' : 'Control+Shift+J');
 
-    await expect(page.locator('button[aria-label="Open JARVIS-OS"]')).toBeVisible({ timeout: 2000 });
+    await expect(page.locator('button[aria-label="Open JARVIS-OS"]')).toBeVisible({
+      timeout: 2000,
+    });
   });
 });

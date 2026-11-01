@@ -1,6 +1,5 @@
-import { generateId, nowISO } from '@jarvis-os/core';
 import type { Task } from '@jarvis-os/core';
-import { simpleGit, SimpleGit } from 'simple-git';
+import { simpleGit } from 'simple-git';
 
 interface TddResult {
   success: boolean;
@@ -21,7 +20,7 @@ export class TddEnforcer {
   private maxRetries = 3;
 
   async enforce(task: Task, worktreePath: string): Promise<TddResult> {
-    const git = simpleGit(worktreePath);
+    const _git = simpleGit(worktreePath);
 
     // Phase 1: Red - Write failing test
     const testPhase = await this.redPhase(task, worktreePath);
@@ -65,13 +64,16 @@ export class TddEnforcer {
     };
   }
 
-  private async redPhase(task: Task, worktreePath: string): Promise<{ success: boolean; error?: string; testFile?: TestFile }> {
+  private async redPhase(
+    task: Task,
+    worktreePath: string
+  ): Promise<{ success: boolean; error?: string; testFile?: TestFile }> {
     // Generate a failing test based on task description
     const testFile = this.generateTestFile(task);
 
     // Write test file
-    const { writeFile, mkdir } = await import('fs/promises');
-    const { join, dirname } = await import('path');
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    const { join, dirname } = await import('node:path');
     const testDir = join(worktreePath, 'tests');
     await mkdir(testDir, { recursive: true });
     const testPath = join(testDir, `${task.id}.test.ts`);
@@ -82,7 +84,7 @@ export class TddEnforcer {
 
   private generateTestFile(task: Task): TestFile {
     const testName = task.title.replace(/[^a-zA-Z0-9]/g, ' ').trim();
-    const safeName = testName.replace(/\s+/g, '_');
+    const _safeName = testName.replace(/\s+/g, '_');
 
     return {
       path: `${task.id}.test.ts`,
@@ -114,8 +116,8 @@ describe('${testName}', () => {
     const implPath = testFile?.path.replace('.test.ts', '.ts') || `${task.id}.ts`;
     const fullImplPath = join(worktreePath, 'src', implPath);
 
-    const { writeFile, mkdir } = await import('fs/promises');
-    const { dirname } = await import('path');
+    const { writeFile, mkdir } = await import('node:fs/promises');
+    const { dirname } = await import('node:path');
     await mkdir(dirname(fullImplPath), { recursive: true });
 
     const implementation = `// Implementation for: ${task.title}
@@ -140,7 +142,10 @@ export function ${task.id.replace(/-/g, '_')}(): string {
     return { success: true };
   }
 
-  private async refactorPhase(task: Task, worktreePath: string): Promise<{ success: boolean; error?: string }> {
+  private async refactorPhase(
+    _task: Task,
+    worktreePath: string
+  ): Promise<{ success: boolean; error?: string }> {
     // Run linter
     const { runLint } = await import('./LintRunner');
     const lintResult = await runLint(worktreePath);
@@ -162,8 +167,8 @@ export function ${task.id.replace(/-/g, '_')}(): string {
   }
 
   private async runTests(worktreePath: string): Promise<{ passed: boolean; output: string }> {
-    const { exec } = await import('child_process');
-    const { promisify } = await import('util');
+    const { exec } = await import('node:child_process');
+    const { promisify } = await import('node:util');
     const execAsync = promisify(exec);
 
     try {
@@ -175,8 +180,8 @@ export function ${task.id.replace(/-/g, '_')}(): string {
   }
 
   private async autoFixLint(worktreePath: string): Promise<void> {
-    const { exec } = await import('child_process');
-    const { promisify } = await import('util');
+    const { exec } = await import('node:child_process');
+    const { promisify } = await import('node:util');
     const execAsync = promisify(exec);
 
     try {

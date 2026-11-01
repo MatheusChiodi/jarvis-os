@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { StoreProvider } from './providers/StoreProvider';
-import { IpcProvider } from './providers/IpcProvider';
 import { ConfigProvider } from './providers/ConfigProvider';
+import { IpcProvider } from './providers/IpcProvider';
+import { StoreProvider } from './providers/StoreProvider';
 import './styles/globals.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

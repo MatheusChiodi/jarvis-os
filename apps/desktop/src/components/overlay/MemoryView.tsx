@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Search, Filter, Database, Link, Tag, Archive, RefreshCw, ChevronDown, ChevronUp, FileText, Eye, Download, Upload, Plus, Settings } from 'lucide-react';
-import { useOverlayStore } from '../../stores/overlayStore';
-import { useTeamsStore } from '../../stores/teamsStore';
+import type { SearchIndexItem, TimelineEvent } from '@jarvis-os/core';
 import { invoke } from '@tauri-apps/api/core';
-import type { Note, SearchIndexItem, TimelineEvent } from '@jarvis-os/core';
+import { Database, Filter, Link, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTeamsStore } from '../../stores/teamsStore';
 
 type MemoryViewMode = 'search' | 'timeline' | 'graph' | 'recent';
 
@@ -33,7 +32,11 @@ export function MemoryView() {
     if (!activeTeamId || !query.trim()) return;
     setLoading(true);
     try {
-      const data = await invoke('memory_search_index', { projectId: activeTeamId, query, limit: 50 });
+      const data = await invoke('memory_search_index', {
+        projectId: activeTeamId,
+        query,
+        limit: 50,
+      });
       setResults(data);
     } catch (error) {
       console.error('Search failed:', error);
@@ -103,7 +106,7 @@ export function MemoryView() {
             />
           </div>
           <div className="flex items-center gap-2">
-            {['search', 'timeline', 'graph', 'recent'].map(m => (
+            {['search', 'timeline', 'graph', 'recent'].map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m as MemoryViewMode)}
@@ -182,7 +185,7 @@ export function MemoryView() {
               </div>
             ) : (
               <div className="space-y-2">
-                {results.map(item => (
+                {results.map((item) => (
                   <SearchResultItem
                     key={item.id}
                     item={item}
@@ -204,8 +207,12 @@ export function MemoryView() {
               </div>
             ) : (
               <div className="space-y-6">
-                {timeline.map(event => (
-                  <TimelineEvent key={event.timestamp} event={event} onObserve={ids => loadObservations(ids)} />
+                {timeline.map((event) => (
+                  <TimelineEvent
+                    key={event.timestamp}
+                    event={event}
+                    onObserve={(ids) => loadObservations(ids)}
+                  />
                 ))}
               </div>
             )}
@@ -215,8 +222,12 @@ export function MemoryView() {
         {mode === 'recent' && !loading && (
           <div className="p-4 overflow-y-auto">
             <div className="space-y-2">
-              {results.map(item => (
-                <SearchResultItem key={item.id} item={item} onClick={() => handleResultClick(item)} />
+              {results.map((item) => (
+                <SearchResultItem
+                  key={item.id}
+                  item={item}
+                  onClick={() => handleResultClick(item)}
+                />
               ))}
             </div>
           </div>
@@ -235,7 +246,10 @@ export function MemoryView() {
         {showDetail && observations.length > 0 && (
           <ObservationDetailPanel
             observations={observations}
-            onClose={() => { setShowDetail(null); setSelectedIds([]); }}
+            onClose={() => {
+              setShowDetail(null);
+              setSelectedIds([]);
+            }}
           />
         )}
       </div>
@@ -243,7 +257,11 @@ export function MemoryView() {
   );
 }
 
-function SearchResultItem({ item, onClick, selected }: { item: SearchIndexItem; onClick: () => void; selected: boolean }) {
+function SearchResultItem({
+  item,
+  onClick,
+  selected,
+}: { item: SearchIndexItem; onClick: () => void; selected: boolean }) {
   const typeColors: Record<string, string> = {
     memory: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
     decision: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
@@ -270,13 +288,21 @@ function SearchResultItem({ item, onClick, selected }: { item: SearchIndexItem; 
             <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded-full">
               {item.agent}
             </span>
-            {item.pinned && <span className="px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full">Pinned</span>}
+            {item.pinned && (
+              <span className="px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full">
+                Pinned
+              </span>
+            )}
           </div>
           <h4 className="font-medium text-gray-900 dark:text-white truncate">{item.title}</h4>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{item.summary}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+            {item.summary}
+          </p>
           <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-            {item.tags.map(tag => (
-              <span key={tag} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{tag}</span>
+            {item.tags.map((tag) => (
+              <span key={tag} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
+                {tag}
+              </span>
             ))}
             <span>{new Date(item.createdAt).toLocaleDateString()}</span>
             <span>Score: {item.score.toFixed(2)}</span>
@@ -287,7 +313,10 @@ function SearchResultItem({ item, onClick, selected }: { item: SearchIndexItem; 
   );
 }
 
-function TimelineEvent({ event, onObserve }: { event: TimelineEvent; onObserve: (ids: string[]) => void }) {
+function TimelineEvent({
+  event,
+  onObserve,
+}: { event: TimelineEvent; onObserve: (ids: string[]) => void }) {
   return (
     <div className="border-l-2 border-gray-200 dark:border-gray-700 pl-4">
       <div className="flex items-center gap-2 mb-3">
@@ -298,10 +327,15 @@ function TimelineEvent({ event, onObserve }: { event: TimelineEvent; onObserve: 
         <span className="text-xs text-gray-500">({event.notes.length} notes)</span>
       </div>
       <div className="space-y-2 ml-6">
-        {event.notes.map(note => (
-          <div key={note.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+        {event.notes.map((note) => (
+          <div
+            key={note.id}
+            className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+          >
             <div className="flex items-center justify-between">
-              <span className="font-medium text-sm text-gray-900 dark:text-white">{note.title}</span>
+              <span className="font-medium text-sm text-gray-900 dark:text-white">
+                {note.title}
+              </span>
               <button
                 onClick={() => onObserve([note.id])}
                 className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
@@ -317,24 +351,39 @@ function TimelineEvent({ event, onObserve }: { event: TimelineEvent; onObserve: 
   );
 }
 
-function ObservationDetailPanel({ observations, onClose }: { observations: any[]; onClose: () => void }) {
+function ObservationDetailPanel({
+  observations,
+  onClose,
+}: { observations: any[]; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold text-gray-900 dark:text-white">Observations ({observations.length})</h3>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
+          <h3 className="font-semibold text-gray-900 dark:text-white">
+            Observations ({observations.length})
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
           {observations.map((obs: any) => (
-            <div key={obs.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div
+              key={obs.id}
+              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+            >
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-gray-900 dark:text-white">{obs.title}</h4>
-                <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">{obs.type}</span>
+                <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">
+                  {obs.type}
+                </span>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{obs.content}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                {obs.content}
+              </p>
               <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                 <span>Agent: {obs.agent}</span>
                 <span>Tags: {obs.tags.join(', ')}</span>
@@ -348,4 +397,4 @@ function ObservationDetailPanel({ observations, onClose }: { observations: any[]
   );
 }
 
-import { X, Clock } from 'lucide-react';
+import { Clock, X } from 'lucide-react';

@@ -1,7 +1,7 @@
-import { simpleGit, type SimpleGit } from 'simple-git';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { type SimpleGit, simpleGit } from 'simple-git';
 
 export interface WorktreeInfo {
   path: string;
@@ -48,7 +48,7 @@ export class WorktreeManager {
 
   async removeWorktree(branchName: string, force = false): Promise<void> {
     const worktrees = await this.listWorktrees();
-    const wt = worktrees.find(w => w.branch === branchName);
+    const wt = worktrees.find((w) => w.branch === branchName);
 
     if (!wt) return; // Already removed
 
@@ -57,7 +57,7 @@ export class WorktreeManager {
     } catch (error) {
       if (force) {
         // Force remove: delete directory + prune
-        const { rm } = await import('fs/promises');
+        const { rm } = await import('node:fs/promises');
         await rm(wt.path, { recursive: true, force: true });
         await this.git.raw(['worktree', 'prune']);
       } else {
@@ -79,13 +79,15 @@ export class WorktreeManager {
 
   async getWorktreePath(branchName: string): Promise<string | null> {
     const worktrees = await this.listWorktrees();
-    return worktrees.find(w => w.branch === branchName)?.path || null;
+    return worktrees.find((w) => w.branch === branchName)?.path || null;
   }
 
   async isBranchMerged(branchName: string): Promise<boolean> {
     try {
       const merged = await this.git.raw(['branch', '--merged', 'main']);
-      return merged.split('\n').some(l => l.trim() === branchName || l.trim() === `* ${branchName}`);
+      return merged
+        .split('\n')
+        .some((l) => l.trim() === branchName || l.trim() === `* ${branchName}`);
     } catch {
       return false;
     }

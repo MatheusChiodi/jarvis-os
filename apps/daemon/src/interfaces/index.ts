@@ -22,7 +22,7 @@ export interface PendingApproval {
   tool: string;
   args: Record<string, unknown>;
   reason: string;
-  resolve: (decision: 'approve' | 'deny') => void;
+  resolve: (result: { approvalId: string; decision: 'approve' | 'deny' }) => void;
   timeout: NodeJS.Timeout;
 }
 

@@ -1,33 +1,33 @@
 import http from 'node:http';
-import { WebSocketServer, WebSocket } from 'ws';
-import { config, validateToken, getOrCreateToken } from './config.js';
-import { closeDb } from './database.js';
-import { createSession, listSessions, getHistory, getSession } from './services/session.js';
-import { runAgentTurn } from './services/agent.js';
-import { resolveApproval } from './services/approval.js';
-import { pendingApprovals } from './services/state.js';
-import { send } from './websocket.js';
-import pino from 'pino';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
+import pino from 'pino';
+import { type WebSocket, WebSocketServer } from 'ws';
+import { config, getOrCreateToken, validateToken } from './config.js';
+import { closeDb } from './database.js';
+import { runAgentTurn } from './services/agent.js';
+import { resolveApproval } from './services/approval.js';
+import { createSession, getHistory, getSession, listSessions } from './services/session.js';
+import { pendingApprovals } from './services/state.js';
+import { send } from './websocket.js';
 
 const logger = pino({
   name: 'jarvisd',
   level: process.env.JARVIS_LOG_LEVEL || 'info',
   transport: {
     target: 'pino/file',
-    options: { destination: resolve(homedir(), '.jarvis-os', 'logs', 'jarvisd.log'), mkdir: true }
+    options: { destination: resolve(homedir(), '.jarvis-os', 'logs', 'jarvisd.log'), mkdir: true },
   },
   redact: {
     paths: ['*.apiKey', '*.token', 'headers.authorization'],
-    censor: '[REDACTED]'
-  }
+    censor: '[REDACTED]',
+  },
 });
 
 const ALLOWED_ORIGINS = new Set([
   'tauri://localhost',
   'http://tauri.localhost',
-  'http://localhost:1420'
+  'http://localhost:1420',
 ]);
 
 interface AuthenticatedWS extends WebSocket {
@@ -65,13 +65,13 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
             ws.authenticated = true;
             clearTimeout(authTimeout);
             logger.info('Client authenticated');
-            
+
             // Send current agent state and pending approvals
-            send(ws, { 
-              type: 'agent.state', 
-              agentId: 'jarvis', 
-              state: 'idle', 
-              ts: new Date().toISOString() 
+            send(ws, {
+              type: 'agent.state',
+              agentId: 'jarvis',
+              state: 'idle',
+              ts: new Date().toISOString(),
             });
 
             for (const [, approval] of pendingApprovals) {
@@ -82,7 +82,7 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
                 args: approval.args,
                 reason: approval.reason,
                 ts: new Date().toISOString(),
-                sessionId: approval.sessionId
+                sessionId: approval.sessionId,
               });
             }
           } else {
@@ -116,11 +116,23 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
         case 'chat.send': {
           const session = getSession(message.sessionId);
           if (!session) {
-            send(ws, { type: 'error', code: 'BAD_REQUEST', message: 'Session not found', ts: new Date().toISOString(), sessionId: message.sessionId });
+            send(ws, {
+              type: 'error',
+              code: 'BAD_REQUEST',
+              message: 'Session not found',
+              ts: new Date().toISOString(),
+              sessionId: message.sessionId,
+            });
             break;
           }
           if (session.currentTurn) {
-            send(ws, { type: 'error', code: 'BUSY', message: 'Session busy with another turn', ts: new Date().toISOString(), sessionId: message.sessionId });
+            send(ws, {
+              type: 'error',
+              code: 'BUSY',
+              message: 'Session busy with another turn',
+              ts: new Date().toISOString(),
+              sessionId: message.sessionId,
+            });
             break;
           }
           ws.sessionId = message.sessionId;
@@ -140,12 +152,22 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
           break;
         }
         default: {
-          send(ws, { type: 'error', code: 'BAD_REQUEST', message: `Unknown message type: ${message.type}`, ts: new Date().toISOString() });
+          send(ws, {
+            type: 'error',
+            code: 'BAD_REQUEST',
+            message: `Unknown message type: ${message.type}`,
+            ts: new Date().toISOString(),
+          });
         }
       }
     } catch (error) {
       logger.error({ error }, 'Error handling message');
-      send(ws, { type: 'error', code: 'INTERNAL', message: String(error), ts: new Date().toISOString() });
+      send(ws, {
+        type: 'error',
+        code: 'INTERNAL',
+        message: String(error),
+        ts: new Date().toISOString(),
+      });
     }
   });
 
@@ -164,10 +186,12 @@ async function handleWebSocket(ws: AuthenticatedWS, req: http.IncomingMessage): 
   });
 }
 
-export async function startDaemon(opts: { port?: number } = {}): Promise<{ port: number; close(): Promise<void> }> {
+export async function startDaemon(
+  opts: { port?: number } = {}
+): Promise<{ port: number; close(): Promise<void> }> {
   const port = opts.port || config.daemon.port;
   const token = getOrCreateToken();
-  logger.info({ token: token.slice(0, 8) + '...' }, 'Daemon token generated');
+  logger.info({ token: `${token.slice(0, 8)}...` }, 'Daemon token generated');
 
   const server = http.createServer(async (req, res) => {
     if (req.url === '/health' && req.method === 'GET') {
@@ -178,10 +202,13 @@ export async function startDaemon(opts: { port?: number } = {}): Promise<{ port:
     }
   });
 
-  const wss = new WebSocketServer({ server, verifyClient: ({ origin }: { origin: string | undefined }) => {
-    if (!origin) return true; // Allow non-browser clients (e.g., curl)
-    return ALLOWED_ORIGINS.has(origin);
-  } });
+  const wss = new WebSocketServer({
+    server,
+    verifyClient: ({ origin }: { origin: string | undefined }) => {
+      if (!origin) return true; // Allow non-browser clients (e.g., curl)
+      return ALLOWED_ORIGINS.has(origin);
+    },
+  });
 
   wss.on('connection', (ws: AuthenticatedWS, req) => {
     handleWebSocket(ws, req);
@@ -205,7 +232,7 @@ export async function startDaemon(opts: { port?: number } = {}): Promise<{ port:
       wss.close();
       closeDb();
       await new Promise<void>((resolve) => server.close(() => resolve()));
-    }
+    },
   };
 }
 

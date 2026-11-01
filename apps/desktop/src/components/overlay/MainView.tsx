@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { MessageSquare, Terminal, Kanban, Database, Settings, Brain } from 'lucide-react';
+import { Database, Kanban, MessageSquare, Settings, Terminal } from 'lucide-react';
 import { useOverlayStore } from '../../stores/overlayStore';
 import { ChatView } from './ChatView';
-import { TerminalView } from './TerminalView';
-import { PlanView } from './PlanView';
 import { MemoryView } from './MemoryView';
+import { PlanView } from './PlanView';
 import { SettingsView } from './SettingsView';
+import { TerminalView } from './TerminalView';
 
 const views = [
   { id: 'chat' as const, label: 'Chat', icon: MessageSquare },
@@ -15,13 +14,13 @@ const views = [
   { id: 'settings' as const, label: 'Settings', icon: Settings },
 ] as const;
 
-export function MainView({ activeView }: { activeView: typeof views[number]['id'] }) {
+export function MainView({ activeView }: { activeView: (typeof views)[number]['id'] }) {
   const { setActiveView } = useOverlayStore();
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-        {views.map(view => (
+        {views.map((view) => (
           <button
             key={view.id}
             onClick={() => setActiveView(view.id)}

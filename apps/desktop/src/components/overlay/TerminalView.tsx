@@ -1,6 +1,6 @@
-import { useRef, useEffect, useState } from 'react';
-import { Terminal, X, Maximize, Minimize, Copy, Trash2, Send } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
+import { Terminal, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useOverlayStore } from '../../stores/overlayStore';
 
 export function TerminalView() {
@@ -64,16 +64,16 @@ export function TerminalView() {
     fitAddon.fit();
 
     // Connect to shell via Tauri
-    const shell = await invoke('spawn_shell', { cols: term.cols, rows: term.rows });
+    const _shell = await invoke('spawn_shell', { cols: term.cols, rows: term.rows });
     // TODO: Implement proper shell communication
 
-    setTerminals(prev => new Map(prev).set(0, { term, fitAddon }));
+    setTerminals((prev) => new Map(prev).set(0, { term, fitAddon }));
     setInitialized(true);
   };
 
   const addTab = () => {
-    const id = nextTabId;
-    setNextTabId(n => n + 1);
+    const _id = nextTabId;
+    setNextTabId((n) => n + 1);
     // TODO: Create new terminal
   };
 
@@ -95,7 +95,7 @@ export function TerminalView() {
     <div className="flex-1 flex flex-col overflow-hidden bg-gray-900">
       <div className="flex items-center justify-between px-3 py-1.5 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-1">
-          {Array.from(terminals.keys()).map(id => (
+          {Array.from(terminals.keys()).map((id) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
@@ -107,14 +107,20 @@ export function TerminalView() {
             >
               Terminal {id + 1}
               <button
-                onClick={(e) => { e.stopPropagation(); closeTab(id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeTab(id);
+                }}
                 className="ml-2 p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-white"
               >
                 <X className="w-3 h-3" />
               </button>
             </button>
           ))}
-          <button onClick={addTab} className="p-1.5 rounded hover:bg-gray-700 text-gray-500 hover:text-white">
+          <button
+            onClick={addTab}
+            className="p-1.5 rounded hover:bg-gray-700 text-gray-500 hover:text-white"
+          >
             <span className="text-lg">+</span>
           </button>
         </div>

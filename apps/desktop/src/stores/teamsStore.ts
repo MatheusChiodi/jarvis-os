@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
-import { persist } from 'zustand/middleware';
-import type { Team, AgentRole } from '@jarvis-os/core';
+import type { Team } from '@jarvis-os/core';
 import { generateId, nowISO } from '@jarvis-os/core';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 
 interface TeamsStore {
   teams: Team[];
@@ -21,9 +21,19 @@ const defaultTeam: Team = {
   description: 'Default team for general tasks',
   workingDir: process.cwd(),
   roles: [
-    { id: 'planner', name: 'Planner', type: 'planner', skills: ['super:brainstorming', 'super:writing-plans'] },
+    {
+      id: 'planner',
+      name: 'Planner',
+      type: 'planner',
+      skills: ['super:brainstorming', 'super:writing-plans'],
+    },
     { id: 'coder', name: 'Coder', type: 'coder', skills: ['ecc:tdd-workflow', 'matt:tdd'] },
-    { id: 'reviewer', name: 'Reviewer', type: 'reviewer', skills: ['ecc:code-review', 'matt:code-review'] },
+    {
+      id: 'reviewer',
+      name: 'Reviewer',
+      type: 'reviewer',
+      skills: ['ecc:code-review', 'matt:code-review'],
+    },
     { id: 'tester', name: 'Tester', type: 'tester', skills: ['ecc:e2e-testing'] },
   ],
   enabledSkills: [
@@ -102,7 +112,7 @@ export const useTeamsStore = create<TeamsStore>()(
 
       updateTeam: async (id, patch) => {
         set((state) => {
-          const index = state.teams.findIndex(t => t.id === id);
+          const index = state.teams.findIndex((t) => t.id === id);
           if (index !== -1) {
             state.teams[index] = { ...state.teams[index], ...patch, updatedAt: nowISO() };
           }
@@ -112,7 +122,7 @@ export const useTeamsStore = create<TeamsStore>()(
 
       deleteTeam: async (id) => {
         set((state) => {
-          state.teams = state.teams.filter(t => t.id !== id);
+          state.teams = state.teams.filter((t) => t.id !== id);
           if (state.activeTeamId === id) {
             state.activeTeamId = state.teams[0]?.id;
           }
@@ -120,9 +130,12 @@ export const useTeamsStore = create<TeamsStore>()(
         await get().saveTeams();
       },
 
-      setActiveTeam: (id) => set((state) => { state.activeTeamId = id; }),
+      setActiveTeam: (id) =>
+        set((state) => {
+          state.activeTeamId = id;
+        }),
 
-      getTeam: (id) => get().teams.find(t => t.id === id),
+      getTeam: (id) => get().teams.find((t) => t.id === id),
     })),
     {
       name: 'teams-storage',

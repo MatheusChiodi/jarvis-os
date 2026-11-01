@@ -1,5 +1,5 @@
 import type { Task } from '@jarvis-os/core';
-import { simpleGit, SimpleGit } from 'simple-git';
+import { simpleGit } from 'simple-git';
 
 interface ReviewIssue {
   severity: 'critical' | 'major' | 'minor' | 'info';
@@ -49,16 +49,16 @@ export class CodeReviewer {
 
     // Calculate summary
     const summary = {
-      critical: issues.filter(i => i.severity === 'critical').length,
-      major: issues.filter(i => i.severity === 'major').length,
-      minor: issues.filter(i => i.severity === 'minor').length,
-      info: issues.filter(i => i.severity === 'info').length,
+      critical: issues.filter((i) => i.severity === 'critical').length,
+      major: issues.filter((i) => i.severity === 'major').length,
+      minor: issues.filter((i) => i.severity === 'minor').length,
+      info: issues.filter((i) => i.severity === 'info').length,
     };
 
     // Determine if review passes
-    const blockingIssues = issues.filter(i =>
-      i.severity === 'critical' ||
-      (i.severity === 'major' && this.minSeverityToBlock === 'major')
+    const blockingIssues = issues.filter(
+      (i) =>
+        i.severity === 'critical' || (i.severity === 'major' && this.minSeverityToBlock === 'major')
     );
 
     return {
@@ -75,7 +75,7 @@ export class CodeReviewer {
   }
 
   private async reviewSpecCompliance(
-    task: Task,
+    _task: Task,
     worktreePath: string,
     files: string[]
   ): Promise<ReviewIssue[]> {
@@ -104,10 +104,7 @@ export class CodeReviewer {
     return issues;
   }
 
-  private async reviewCodeQuality(
-    worktreePath: string,
-    files: string[]
-  ): Promise<ReviewIssue[]> {
+  private async reviewCodeQuality(worktreePath: string, files: string[]): Promise<ReviewIssue[]> {
     const issues: ReviewIssue[] = [];
 
     for (const file of files) {
@@ -204,17 +201,57 @@ export class CodeReviewer {
     const issues: ReviewIssue[] = [];
 
     const securityPatterns = [
-      { pattern: /password\s*=\s*['"][^'"]+['"]/i, message: 'Hardcoded password', severity: 'critical' as const },
-      { pattern: /api[_-]?key\s*=\s*['"][^'"]+['"]/i, message: 'Hardcoded API key', severity: 'critical' as const },
-      { pattern: /secret\s*=\s*['"][^'"]+['"]/i, message: 'Hardcoded secret', severity: 'critical' as const },
-      { pattern: /token\s*=\s*['"][^'"]+['"]/i, message: 'Hardcoded token', severity: 'critical' as const },
+      {
+        pattern: /password\s*=\s*['"][^'"]+['"]/i,
+        message: 'Hardcoded password',
+        severity: 'critical' as const,
+      },
+      {
+        pattern: /api[_-]?key\s*=\s*['"][^'"]+['"]/i,
+        message: 'Hardcoded API key',
+        severity: 'critical' as const,
+      },
+      {
+        pattern: /secret\s*=\s*['"][^'"]+['"]/i,
+        message: 'Hardcoded secret',
+        severity: 'critical' as const,
+      },
+      {
+        pattern: /token\s*=\s*['"][^'"]+['"]/i,
+        message: 'Hardcoded token',
+        severity: 'critical' as const,
+      },
       { pattern: /eval\s*\(/, message: 'Use of eval()', severity: 'major' as const },
-      { pattern: /innerHTML\s*=/, message: 'Potential XSS via innerHTML', severity: 'major' as const },
-      { pattern: /dangerouslySetInnerHTML/, message: 'React dangerouslySetInnerHTML', severity: 'major' as const },
-      { pattern: /sql.*\$\{.*\}/i, message: 'Possible SQL injection', severity: 'critical' as const },
-      { pattern: /exec\s*\(.*\$\{/, message: 'Possible command injection', severity: 'critical' as const },
-      { pattern: /crypto\.createHash\(['"]md5['"]/, message: 'Use of MD5 (cryptographically broken)', severity: 'major' as const },
-      { pattern: /crypto\.createHash\(['"]sha1['"]/, message: 'Use of SHA1 (cryptographically weak)', severity: 'minor' as const },
+      {
+        pattern: /innerHTML\s*=/,
+        message: 'Potential XSS via innerHTML',
+        severity: 'major' as const,
+      },
+      {
+        pattern: /dangerouslySetInnerHTML/,
+        message: 'React dangerouslySetInnerHTML',
+        severity: 'major' as const,
+      },
+      {
+        pattern: /sql.*\$\{.*\}/i,
+        message: 'Possible SQL injection',
+        severity: 'critical' as const,
+      },
+      {
+        pattern: /exec\s*\(.*\$\{/,
+        message: 'Possible command injection',
+        severity: 'critical' as const,
+      },
+      {
+        pattern: /crypto\.createHash\(['"]md5['"]/,
+        message: 'Use of MD5 (cryptographically broken)',
+        severity: 'major' as const,
+      },
+      {
+        pattern: /crypto\.createHash\(['"]sha1['"]/,
+        message: 'Use of SHA1 (cryptographically weak)',
+        severity: 'minor' as const,
+      },
     ];
 
     for (const file of files) {
@@ -280,7 +317,7 @@ export class CodeReviewer {
         const lineNum = i + 1;
 
         // N+1 query patterns
-        if (line.includes('.find(') && line.includes('forEach') || line.includes('.map(')) {
+        if ((line.includes('.find(') && line.includes('forEach')) || line.includes('.map(')) {
           issues.push({
             severity: 'minor',
             file,
@@ -310,8 +347,8 @@ export class CodeReviewer {
 
   private async readFile(worktreePath: string, file: string): Promise<string | null> {
     try {
-      const { readFile } = await import('fs/promises');
-      const { join } = await import('path');
+      const { readFile } = await import('node:fs/promises');
+      const { join } = await import('node:path');
       return await readFile(join(worktreePath, file), 'utf-8');
     } catch {
       return null;

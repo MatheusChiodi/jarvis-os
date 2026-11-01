@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { type ReactNode, createContext, useContext } from 'react';
 
 interface IpcContextValue {
   invoke: typeof invoke;
@@ -10,11 +10,7 @@ interface IpcContextValue {
 const IpcContext = createContext<IpcContextValue | null>(null);
 
 export function IpcProvider({ children }: { children: ReactNode }) {
-  return (
-    <IpcContext.Provider value={{ invoke, listen }}>
-      {children}
-    </IpcContext.Provider>
-  );
+  return <IpcContext.Provider value={{ invoke, listen }}>{children}</IpcContext.Provider>;
 }
 
 export function useIpc() {

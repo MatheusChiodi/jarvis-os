@@ -1,6 +1,6 @@
 import type { Config } from '@jarvis-os/protocol';
-import { config } from '../config.js';
 import { OpenAI } from 'openai';
+import { config } from '../config.js';
 
 export interface Provider {
   id: string;
@@ -49,14 +49,14 @@ export class ProviderRegistry {
         baseURL: providerConfig.baseUrl,
         apiKey: apiKey || 'not-needed',
         defaultHeaders: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
-        dangerouslyAllowBrowser: false
+        dangerouslyAllowBrowser: false,
       });
 
       this.providers.set(providerConfig.id, {
         id: providerConfig.id,
         baseUrl: providerConfig.baseUrl,
         apiKey,
-        client
+        client,
       });
 
       console.log(`Provider registered: ${providerConfig.id} at ${providerConfig.baseUrl}`);
@@ -81,13 +81,13 @@ export class ProviderRegistry {
     }
     return {
       providerId: ref.slice(0, colonIndex),
-      model: ref.slice(colonIndex + 1)
+      model: ref.slice(colonIndex + 1),
     };
   }
 
   resolveModel(routeKey: string) {
     const route = this.routes.get(routeKey) || this.defaultRoute;
-    return route.map(ref => this.parseModelRef(ref));
+    return route.map((ref) => this.parseModelRef(ref));
   }
 
   async *chatCompletion(options: any): AsyncGenerator<any, void, unknown> {
@@ -108,10 +108,10 @@ export class ProviderRegistry {
           tool_choice: options.toolChoice,
           temperature: options.temperature ?? 0.7,
           max_tokens: options.maxTokens,
-          stream: true
+          stream: true,
         });
 
-        let accumulatedToolCalls: any[] = [];
+        const accumulatedToolCalls: any[] = [];
 
         for await (const chunk of stream) {
           const delta = chunk.choices[0]?.delta;
@@ -122,7 +122,11 @@ export class ProviderRegistry {
             for (const tc of delta.tool_calls) {
               if (tc.index !== undefined) {
                 while (accumulatedToolCalls.length <= tc.index) {
-                  accumulatedToolCalls.push({ id: '', type: 'function', function: { name: '', arguments: '' } });
+                  accumulatedToolCalls.push({
+                    id: '',
+                    type: 'function',
+                    function: { name: '', arguments: '' },
+                  });
                 }
                 const existing = accumulatedToolCalls[tc.index];
                 if (tc.id) existing.id = tc.id;
@@ -134,11 +138,28 @@ export class ProviderRegistry {
           }
         }
 
-        yield { content: '', toolCalls: accumulatedToolCalls.length > 0 ? accumulatedToolCalls : undefined, done: true };
+        yield {
+          content: '',
+          toolCalls: accumulatedToolCalls.length > 0 ? accumulatedToolCalls : undefined,
+          done: true,
+        };
         return;
       } catch (error) {
-        const isRetryable = (error as any).status === 429 || (error as any).status === 500 || (error as any).status === 502 || (error as any).status === 503 || (error as any).status === 504;
-        console.warn({ providerId: modelRef.providerId, model: modelRef.model, error: (error as Error).message, retryable: isRetryable }, 'Provider error, trying next in fallback chain');
+        const isRetryable =
+          (error as any).status === 429 ||
+          (error as any).status === 500 ||
+          (error as any).status === 502 ||
+          (error as any).status === 503 ||
+          (error as any).status === 504;
+        console.warn(
+          {
+            providerId: modelRef.providerId,
+            model: modelRef.model,
+            error: (error as Error).message,
+            retryable: isRetryable,
+          },
+          'Provider error, trying next in fallback chain'
+        );
         if (!isRetryable) {
           throw error;
         }

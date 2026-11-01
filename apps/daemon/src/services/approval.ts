@@ -1,6 +1,11 @@
+import crypto from 'node:crypto';
 import { getDb } from '../database.js';
 import { pendingApprovals } from './state.js';
-import crypto from 'node:crypto';
+
+export interface ApprovalResult {
+  approvalId: string;
+  decision: 'approve' | 'deny';
+}
 
 export function createApproval(
   sessionId: string,
@@ -8,7 +13,7 @@ export function createApproval(
   args: Record<string, unknown>,
   reason: string,
   timeoutMs: number
-): Promise<'approve' | 'deny'> {
+): Promise<ApprovalResult> {
   const approvalId = crypto.randomUUID();
   const now = new Date().toISOString();
 
@@ -22,9 +27,12 @@ export function createApproval(
     const timeout = setTimeout(() => {
       pendingApprovals.delete(approvalId);
       const db = getDb();
-      db.prepare('UPDATE approvals SET decision = ?, resolved_at = ? WHERE id = ?')
-        .run('denied', new Date().toISOString(), approvalId);
-      resolve('deny');
+      db.prepare('UPDATE approvals SET decision = ?, resolved_at = ? WHERE id = ?').run(
+        'denied',
+        new Date().toISOString(),
+        approvalId
+      );
+      resolve({ approvalId, decision: 'deny' });
     }, timeoutMs);
 
     pendingApprovals.set(approvalId, {
@@ -33,8 +41,8 @@ export function createApproval(
       tool,
       args,
       reason,
-      resolve,
-      timeout
+      resolve: (result: { approvalId: string; decision: 'approve' | 'deny' }) => resolve(result),
+      timeout,
     });
   });
 }
@@ -47,8 +55,11 @@ export function resolveApproval(approvalId: string, decision: 'approve' | 'deny'
   pendingApprovals.delete(approvalId);
 
   const db = getDb();
-  db.prepare('UPDATE approvals SET decision = ?, resolved_at = ? WHERE id = ?')
-    .run(decision, new Date().toISOString(), approvalId);
+  db.prepare('UPDATE approvals SET decision = ?, resolved_at = ? WHERE id = ?').run(
+    decision,
+    new Date().toISOString(),
+    approvalId
+  );
 
-  pending.resolve(decision);
+  pending.resolve({ approvalId, decision });
 }

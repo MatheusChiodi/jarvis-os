@@ -160,8 +160,8 @@ describe('Vault', () => {
 
     const retrieved = await getNote(vault, 'note-1');
     expect(retrieved).not.toBeNull();
-    expect(retrieved!.frontmatter.title).toBe('Test Note');
-    expect(retrieved!.content).toBe('# Test Note\n\nThis is a test note.');
+    expect(retrieved?.frontmatter.title).toBe('Test Note');
+    expect(retrieved?.content).toBe('# Test Note\n\nThis is a test note.');
   });
 
   it('should list notes with filters', async () => {
@@ -621,7 +621,7 @@ describe('Vault', () => {
       free: vi.fn(),
     });
 
-    const note1 = await saveNote(vault, {
+    const _note1 = await saveNote(vault, {
       frontmatter: {
         id: 'note-1',
         type: 'memory',
@@ -639,7 +639,7 @@ describe('Vault', () => {
       content: 'Content 1',
     });
 
-    const note2 = await saveNote(vault, {
+    const _note2 = await saveNote(vault, {
       frontmatter: {
         id: 'note-2',
         type: 'memory',
@@ -849,9 +849,9 @@ describe('Vault', () => {
     const state = await getHookState(vault, 'testHook', 'agent-1');
 
     expect(state).not.toBeNull();
-    expect(state!.hook_type).toBe('testHook');
-    expect(state!.agent_id).toBe('agent-1');
-    expect(JSON.parse(state!.state)).toEqual({ key: 'value' });
+    expect(state?.hook_type).toBe('testHook');
+    expect(state?.agent_id).toBe('agent-1');
+    expect(JSON.parse(state?.state)).toEqual({ key: 'value' });
   });
 });
 

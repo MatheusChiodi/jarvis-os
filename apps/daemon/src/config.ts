@@ -1,8 +1,8 @@
-import { validateConfig, type Config } from '@jarvis-os/protocol';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { homedir } from 'node:os';
 import crypto from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { resolve } from 'node:path';
+import { type Config, validateConfig } from '@jarvis-os/protocol';
 
 const CONFIG_DIR = resolve(homedir(), '.jarvis-os');
 const CONFIG_PATH = resolve(CONFIG_DIR, 'config.json');
@@ -16,13 +16,13 @@ export function loadConfig(): Config {
       daemon: { host: '127.0.0.1', port: 47800 },
       providers: [
         { id: '9router', baseUrl: 'http://localhost:20128/v1', apiKeyEnv: 'NINEROUTER_API_KEY' },
-        { id: 'ollama', baseUrl: 'http://localhost:11434/v1', apiKeyEnv: 'OLLAMA_API_KEY' }
+        { id: 'ollama', baseUrl: 'http://localhost:11434/v1', apiKeyEnv: 'OLLAMA_API_KEY' },
       ],
       routes: {
-        default: ['9router:gpt-4o-mini', 'ollama:qwen2.5-coder:7b']
+        default: ['9router:gpt-4o-mini', 'ollama:qwen2.5-coder:7b'],
       },
       workspaces: [resolve(homedir(), 'VibeCode')],
-      agent: { maxIterations: 25, maxToolOutputChars: 20000, approvalTimeoutMs: 600000 }
+      agent: { maxIterations: 25, maxToolOutputChars: 20000, approvalTimeoutMs: 600000 },
     };
     saveConfig(defaultConfig);
     return defaultConfig;
@@ -38,11 +38,11 @@ export function loadConfig(): Config {
       daemon: { host: '127.0.0.1', port: 47800 },
       providers: [
         { id: '9router', baseUrl: 'http://localhost:20128/v1', apiKeyEnv: 'NINEROUTER_API_KEY' },
-        { id: 'ollama', baseUrl: 'http://localhost:11434/v1', apiKeyEnv: 'OLLAMA_API_KEY' }
+        { id: 'ollama', baseUrl: 'http://localhost:11434/v1', apiKeyEnv: 'OLLAMA_API_KEY' },
       ],
       routes: { default: ['9router:gpt-4o-mini', 'ollama:qwen2.5-coder:7b'] },
       workspaces: [resolve(homedir(), 'VibeCode')],
-      agent: { maxIterations: 25, maxToolOutputChars: 20000, approvalTimeoutMs: 600000 }
+      agent: { maxIterations: 25, maxToolOutputChars: 20000, approvalTimeoutMs: 600000 },
     };
   }
 }

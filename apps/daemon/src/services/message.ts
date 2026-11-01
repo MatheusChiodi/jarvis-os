@@ -17,5 +17,8 @@ export function saveMessage(sessionId: string, message: any): void {
     message.completionTokens || null,
     message.createdAt
   );
-  db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId);
+  db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(
+    new Date().toISOString(),
+    sessionId
+  );
 }

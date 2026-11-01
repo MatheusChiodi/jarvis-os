@@ -1,14 +1,15 @@
+import type { Plan, Task } from '@jarvis-os/core';
+import { AlertTriangle, CheckSquare, Clock, Flag, GitBranch } from 'lucide-react';
 import { useState } from 'react';
-import { Plus, CheckSquare, Square, Trash2, Edit, MoreVertical, ChevronDown, ChevronUp, Clock, GitBranch, AlertTriangle, Flag } from 'lucide-react';
-import { useOverlayStore } from '../../stores/overlayStore';
 import { useTeamsStore } from '../../stores/teamsStore';
-import type { Task, Plan } from '@jarvis-os/core';
 
 export function PlanView() {
   const { activeTeamId } = useTeamsStore();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'review' | 'done' | 'blocked'>('all');
+  const [filter, setFilter] = useState<
+    'all' | 'pending' | 'in_progress' | 'review' | 'done' | 'blocked'
+  >('all');
 
   // Mock plan data
   useEffect(() => {
@@ -22,25 +23,97 @@ export function PlanView() {
             id: 'phase-1',
             name: 'Design',
             tasks: [
-              { id: 'task-1', teamId: activeTeamId, title: 'Create auth spec', description: 'Write detailed specification', status: 'done', assigneeRole: 'planner', dependencies: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), completedAt: new Date().toISOString() },
-              { id: 'task-2', teamId: activeTeamId, title: 'Design database schema', description: 'Users, sessions, tokens tables', status: 'done', assigneeRole: 'architect', dependencies: ['task-1'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), completedAt: new Date().toISOString() },
+              {
+                id: 'task-1',
+                teamId: activeTeamId,
+                title: 'Create auth spec',
+                description: 'Write detailed specification',
+                status: 'done',
+                assigneeRole: 'planner',
+                dependencies: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                completedAt: new Date().toISOString(),
+              },
+              {
+                id: 'task-2',
+                teamId: activeTeamId,
+                title: 'Design database schema',
+                description: 'Users, sessions, tokens tables',
+                status: 'done',
+                assigneeRole: 'architect',
+                dependencies: ['task-1'],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                completedAt: new Date().toISOString(),
+              },
             ],
           },
           {
             id: 'phase-2',
             name: 'Implementation',
             tasks: [
-              { id: 'task-3', teamId: activeTeamId, title: 'Implement OAuth2 flow', description: 'Google, GitHub providers', status: 'in_progress', assigneeRole: 'coder', dependencies: ['task-2'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-              { id: 'task-4', teamId: activeTeamId, title: 'Create session management', description: 'JWT tokens, refresh logic', status: 'pending', assigneeRole: 'coder', dependencies: ['task-3'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-              { id: 'task-5', teamId: activeTeamId, title: 'Add protected routes', description: 'Middleware for auth', status: 'pending', assigneeRole: 'coder', dependencies: ['task-4'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+              {
+                id: 'task-3',
+                teamId: activeTeamId,
+                title: 'Implement OAuth2 flow',
+                description: 'Google, GitHub providers',
+                status: 'in_progress',
+                assigneeRole: 'coder',
+                dependencies: ['task-2'],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+              {
+                id: 'task-4',
+                teamId: activeTeamId,
+                title: 'Create session management',
+                description: 'JWT tokens, refresh logic',
+                status: 'pending',
+                assigneeRole: 'coder',
+                dependencies: ['task-3'],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+              {
+                id: 'task-5',
+                teamId: activeTeamId,
+                title: 'Add protected routes',
+                description: 'Middleware for auth',
+                status: 'pending',
+                assigneeRole: 'coder',
+                dependencies: ['task-4'],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
             ],
           },
           {
             id: 'phase-3',
             name: 'Testing',
             tasks: [
-              { id: 'task-6', teamId: activeTeamId, title: 'Write unit tests', description: 'Auth service, middleware', status: 'pending', assigneeRole: 'tester', dependencies: ['task-5'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-              { id: 'task-7', teamId: activeTeamId, title: 'E2E auth flow tests', description: 'Login, logout, refresh', status: 'pending', assigneeRole: 'tester', dependencies: ['task-6'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+              {
+                id: 'task-6',
+                teamId: activeTeamId,
+                title: 'Write unit tests',
+                description: 'Auth service, middleware',
+                status: 'pending',
+                assigneeRole: 'tester',
+                dependencies: ['task-5'],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+              {
+                id: 'task-7',
+                teamId: activeTeamId,
+                title: 'E2E auth flow tests',
+                description: 'Login, logout, refresh',
+                status: 'pending',
+                assigneeRole: 'tester',
+                dependencies: ['task-6'],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
             ],
           },
         ],
@@ -63,14 +136,14 @@ export function PlanView() {
     );
   }
 
-  const allTasks = plan.phases.flatMap(p => p.tasks);
-  const filteredTasks = filter === 'all' ? allTasks : allTasks.filter(t => t.status === filter);
+  const allTasks = plan.phases.flatMap((p) => p.tasks);
+  const filteredTasks = filter === 'all' ? allTasks : allTasks.filter((t) => t.status === filter);
   const stats = {
     total: allTasks.length,
-    done: allTasks.filter(t => t.status === 'done').length,
-    inProgress: allTasks.filter(t => t.status === 'in_progress').length,
-    pending: allTasks.filter(t => t.status === 'pending').length,
-    blocked: allTasks.filter(t => t.status === 'blocked').length,
+    done: allTasks.filter((t) => t.status === 'done').length,
+    inProgress: allTasks.filter((t) => t.status === 'in_progress').length,
+    pending: allTasks.filter((t) => t.status === 'pending').length,
+    blocked: allTasks.filter((t) => t.status === 'blocked').length,
   };
 
   const statusColumns = [
@@ -87,7 +160,9 @@ export function PlanView() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white">{plan.goal}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{plan.phases.length} phases · {stats.total} tasks</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {plan.phases.length} phases · {stats.total} tasks
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <select
@@ -129,20 +204,20 @@ export function PlanView() {
       <div className="flex-1 overflow-hidden">
         {viewMode === 'kanban' ? (
           <div className="flex gap-4 p-4 overflow-x-auto h-full pb-20">
-            {statusColumns.map(col => (
+            {statusColumns.map((col) => (
               <KanbanColumn
                 key={col.id}
                 columnId={col.id}
                 label={col.label}
                 Icon={col.icon}
-                tasks={allTasks.filter(t => t.status === col.id)}
+                tasks={allTasks.filter((t) => t.status === col.id)}
               />
             ))}
           </div>
         ) : (
           <div className="p-4 overflow-y-auto">
             <div className="space-y-2">
-              {filteredTasks.map(task => (
+              {filteredTasks.map((task) => (
                 <TaskRow key={task.id} task={task} />
               ))}
             </div>
@@ -153,24 +228,29 @@ export function PlanView() {
   );
 }
 
-function KanbanColumn({ columnId, label, Icon, tasks }: { columnId: string; label: string; Icon: React.ComponentType; tasks: Task[] }) {
+function KanbanColumn({
+  columnId,
+  label,
+  Icon,
+  tasks,
+}: { columnId: string; label: string; Icon: React.ComponentType; tasks: Task[] }) {
   return (
     <div className="flex-shrink-0 w-72 bg-gray-50 dark:bg-gray-800 rounded-xl p-3 flex flex-col min-h-0">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4 text-gray-500" />
           <span className="font-medium text-gray-900 dark:text-white">{label}</span>
-          <span className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 rounded-full">{tasks.length}</span>
+          <span className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 rounded-full">
+            {tasks.length}
+          </span>
         </div>
       </div>
       <div className="space-y-2 min-h-[200px] max-h-[calc(100vh-300px)] overflow-y-auto">
-        {tasks.map(task => (
+        {tasks.map((task) => (
           <TaskCard key={task.id} task={task} />
         ))}
         {tasks.length === 0 && (
-          <div className="text-center py-8 text-gray-400 text-sm">
-            Drop tasks here
-          </div>
+          <div className="text-center py-8 text-gray-400 text-sm">Drop tasks here</div>
         )}
       </div>
     </div>
@@ -190,8 +270,12 @@ function TaskCard({ task }: { task: Task }) {
     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-gray-900 dark:text-white truncate">{task.title}</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{task.description}</p>
+          <h4 className="font-medium text-sm text-gray-900 dark:text-white truncate">
+            {task.title}
+          </h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+            {task.description}
+          </p>
           <div className="flex items-center gap-2 mt-2">
             <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[task.status]}`}>
               {task.status.replace('_', ' ')}
@@ -229,7 +313,9 @@ function TaskRow({ task }: { task: Task }) {
         <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{task.title}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{task.description}</p>
       </div>
-      <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[task.status].replace('text-', 'bg-').replace('dark:text-', 'dark:bg-').replace('600', '100').replace('400', '900/30')}`}>
+      <span
+        className={`px-2 py-0.5 text-xs rounded-full ${statusColors[task.status].replace('text-', 'bg-').replace('dark:text-', 'dark:bg-').replace('600', '100').replace('400', '900/30')}`}
+      >
         {task.status.replace('_', ' ')}
       </span>
       <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300">

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
 import { persist } from 'zustand/middleware';
-import { generateId, nowISO } from '@jarvis-os/core';
+import { immer } from 'zustand/middleware/immer';
 
 interface AppConfig {
   version: number;
@@ -120,7 +119,9 @@ export const useConfigStore = create<ConfigStore>()(
       },
 
       resetConfig: async () => {
-        set((state) => { state.config = defaultConfig; });
+        set((state) => {
+          state.config = defaultConfig;
+        });
         await get().saveConfig();
       },
     })),

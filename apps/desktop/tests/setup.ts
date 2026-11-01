@@ -12,11 +12,13 @@ vi.mock('@tauri-apps/api/event', () => ({
 }));
 
 vi.mock('@tauri-apps/plugin-store', () => ({
-  get: vi.fn(() => Promise.resolve({
-    get: vi.fn(() => Promise.resolve(null)),
-    set: vi.fn(),
-    save: vi.fn(),
-  })),
+  get: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => Promise.resolve(null)),
+      set: vi.fn(),
+      save: vi.fn(),
+    })
+  ),
 }));
 
 vi.mock('@tauri-apps/api/window', () => ({
@@ -32,7 +34,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -54,6 +56,6 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 // Mock crypto.randomUUID
 Object.defineProperty(global, 'crypto', {
   value: {
-    randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
+    randomUUID: () => `test-uuid-${Math.random().toString(36).substr(2, 9)}`,
   },
 });

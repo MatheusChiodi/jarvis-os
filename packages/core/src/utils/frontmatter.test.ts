@@ -118,7 +118,7 @@ This is the body content.`;
 
   describe('extractHeadings', () => {
     it('extracts headings with levels', () => {
-      const content = `# H1\n## H2\n### H3\nSome text\n## Another H2`;
+      const content = '# H1\n## H2\n### H3\nSome text\n## Another H2';
       const headings = extractHeadings(content);
       expect(headings).toEqual([
         { level: 1, text: 'H1' },

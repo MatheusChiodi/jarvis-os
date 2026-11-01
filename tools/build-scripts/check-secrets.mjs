@@ -26,13 +26,10 @@ const patterns = [
 
 const envFileRegex = /\.env($|\.)/;
 
-const skipPaths = [
-  'tools/build-scripts/check-secrets.mjs',
-  'docs/',
-];
+const skipPaths = ['tools/build-scripts/check-secrets.mjs', 'docs/'];
 
 function shouldSkip(filePath) {
-  return skipPaths.some(p => filePath.includes(p));
+  return skipPaths.some((p) => filePath.includes(p));
 }
 
 function getStagedFiles() {

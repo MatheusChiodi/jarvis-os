@@ -60,8 +60,6 @@
     "commit-msg": "pnpm exec commitlint --edit $1"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": [
-      "biome check --write --no-errors-on-unmatched"
-    ]
+    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": ["biome check --write --no-errors-on-unmatched"]
   }
 }

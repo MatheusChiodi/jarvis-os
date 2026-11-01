@@ -168,8 +168,8 @@ describe('HookRegistry', () => {
       const config = registry.getConfig();
       expect(config.taskCompleted).toBeDefined();
       expect(config.teammateIdle).toBeDefined();
-      expect(config.taskCompleted!.enabled).toBe(true);
-      expect(config.teammateIdle!.enabled).toBe(true);
+      expect(config.taskCompleted?.enabled).toBe(true);
+      expect(config.teammateIdle?.enabled).toBe(true);
     });
 
     it('should update config', () => {
@@ -178,8 +178,8 @@ describe('HookRegistry', () => {
       });
 
       const config = registry.getConfig();
-      expect(config.taskCompleted!.enabled).toBe(false);
-      expect(config.teammateIdle!.enabled).toBe(true);
+      expect(config.taskCompleted?.enabled).toBe(false);
+      expect(config.teammateIdle?.enabled).toBe(true);
     });
   });
 });
@@ -201,22 +201,22 @@ describe('builtInHooks from Hooks.ts', () => {
 
     const taskCompleted = hookDefinitions.find((h) => h.name === 'taskCompleted');
     expect(taskCompleted).toBeDefined();
-    expect(taskCompleted!.description).toContain('learning note');
+    expect(taskCompleted?.description).toContain('learning note');
 
     const teammateIdle = hookDefinitions.find((h) => h.name === 'teammateIdle');
     expect(teammateIdle).toBeDefined();
-    expect(teammateIdle!.description).toContain('state note');
+    expect(teammateIdle?.description).toContain('state note');
 
     const taskStarted = hookDefinitions.find((h) => h.name === 'taskStarted');
     expect(taskStarted).toBeDefined();
-    expect(taskStarted!.description).toContain('state note');
+    expect(taskStarted?.description).toContain('state note');
 
     const decisionMade = hookDefinitions.find((h) => h.name === 'decisionMade');
     expect(decisionMade).toBeDefined();
-    expect(decisionMade!.description).toContain('decision note');
+    expect(decisionMade?.description).toContain('decision note');
 
     const communicationSent = hookDefinitions.find((h) => h.name === 'communicationSent');
     expect(communicationSent).toBeDefined();
-    expect(communicationSent!.description).toContain('communication note');
+    expect(communicationSent?.description).toContain('communication note');
   });
 });

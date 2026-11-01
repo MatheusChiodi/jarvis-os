@@ -1,7 +1,23 @@
-import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
-import { MIGRATIONS, SCHEMA_VERSION, type NoteRow, type NoteFtsRow, type HookStateRow } from './Schema.js';
-import type { Note, NoteType, NoteFilters, SearchIndexItem, TimelineEvent, ObservationDetail, MermaidGraph, GraphNode, GraphEdge } from '@jarvis-os/core';
+import type {
+  GraphEdge,
+  GraphNode,
+  MermaidGraph,
+  Note,
+  NoteFilters,
+  NoteType,
+  ObservationDetail,
+  SearchIndexItem,
+  TimelineEvent,
+} from '@jarvis-os/core';
 import { generateId, nowISO } from '@jarvis-os/core';
+import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
+import {
+  type HookStateRow,
+  MIGRATIONS,
+  type NoteFtsRow,
+  type NoteRow,
+  SCHEMA_VERSION,
+} from './Schema.js';
 
 export interface VaultConfig {
   projectId: string;
@@ -29,7 +45,11 @@ export interface SearchOptions {
 }
 
 export class VaultError extends Error {
-  constructor(message: string, public readonly code: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly cause?: Error
+  ) {
     super(message);
     this.name = 'VaultError';
   }
@@ -92,7 +112,9 @@ async function initializeDatabase(vault: Vault): Promise<void> {
     }
   }
 
-  const versionResult = vault.db.exec(`SELECT version FROM schema_version ORDER BY version DESC LIMIT 1`);
+  const versionResult = vault.db.exec(
+    'SELECT version FROM schema_version ORDER BY version DESC LIMIT 1'
+  );
   const firstRow = versionResult[0];
   const values = firstRow?.values;
   if (values && values.length > 0 && values[0] && values[0].length > 0) {
@@ -210,8 +232,10 @@ export async function getNote(vault: Vault, ref: string): Promise<Note | null> {
     LIMIT 1
   `);
   stmt.bind([ref, ref, ref]);
-  
-  const result: Note | null = stmt.step() ? rowToNote(stmt.getAsObject() as unknown as NoteRow) : null;
+
+  const result: Note | null = stmt.step()
+    ? rowToNote(stmt.getAsObject() as unknown as NoteRow)
+    : null;
   stmt.free();
   return result;
 }
@@ -252,7 +276,7 @@ export async function listNotes(vault: Vault, filters: NoteFilters = {}): Promis
   }
 
   query += ' ORDER BY created_at DESC';
-  
+
   if (filters.limit) {
     query += ' LIMIT ?';
     params.push(filters.limit);
@@ -294,7 +318,10 @@ export async function deleteNote(vault: Vault, ref: string): Promise<void> {
   stmt.free();
 }
 
-export async function searchIndex(vault: Vault, options: SearchOptions): Promise<SearchIndexItem[]> {
+export async function searchIndex(
+  vault: Vault,
+  options: SearchOptions
+): Promise<SearchIndexItem[]> {
   if (!vault.initialized) {
     throw new VaultError('Vault not initialized', 'NOT_INITIALIZED');
   }
@@ -361,7 +388,11 @@ export async function searchIndex(vault: Vault, options: SearchOptions): Promise
   return results;
 }
 
-export async function getTimeline(vault: Vault, around?: string, windowDays = 7): Promise<TimelineEvent[]> {
+export async function getTimeline(
+  vault: Vault,
+  around?: string,
+  windowDays = 7
+): Promise<TimelineEvent[]> {
   if (!vault.initialized) {
     throw new VaultError('Vault not initialized', 'NOT_INITIALIZED');
   }
@@ -386,7 +417,7 @@ export async function getTimeline(vault: Vault, around?: string, windowDays = 7)
   while (stmt.step()) {
     const row = stmt.getAsObject() as unknown as NoteFtsRow;
     const createdAt: string = (row.created_at as string) || '';
-    const dateKey: string = (createdAt.split('T')[0]) || '';
+    const dateKey: string = createdAt.split('T')[0] || '';
     const item = rowToTimelineEvent(row);
     const existing = notesByDate.get(dateKey);
     if (existing) {
@@ -494,7 +525,12 @@ export async function getGraph(vault: Vault): Promise<MermaidGraph> {
   const nodeMap = new Map<string, GraphNode>();
 
   while (stmt.step()) {
-    const row = stmt.getAsObject() as unknown as { id: string; title: string; type: NoteType; wikilinks: string };
+    const row = stmt.getAsObject() as unknown as {
+      id: string;
+      title: string;
+      type: NoteType;
+      wikilinks: string;
+    };
     const node: GraphNode = { id: row.id, label: row.title, type: row.type };
     nodes.push(node);
     nodeMap.set(row.id, node);
@@ -597,7 +633,17 @@ export async function setHookState(
       INSERT INTO hook_state (id, project_id, hook_type, agent_id, task_id, state, last_triggered_at, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    stmt.run([id, vault.projectId, hookType, agentId, taskId || null, JSON.stringify(state), nowISO(), nowISO(), nowISO()]);
+    stmt.run([
+      id,
+      vault.projectId,
+      hookType,
+      agentId,
+      taskId || null,
+      JSON.stringify(state),
+      nowISO(),
+      nowISO(),
+      nowISO(),
+    ]);
     stmt.free();
   }
 }

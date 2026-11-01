@@ -1,7 +1,7 @@
+import type { OverlayBounds, OverlayState, OverlayView } from '@jarvis-os/core';
 import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
 import { persist } from 'zustand/middleware';
-import type { OverlayState, OverlayBounds, OverlayView } from '@jarvis-os/core';
+import { immer } from 'zustand/middleware/immer';
 
 interface OverlayStore extends OverlayState {
   setOpen: (open: boolean) => void;
@@ -17,19 +17,37 @@ const defaultBounds: OverlayBounds = { x: 100, y: 100, width: 1200, height: 800 
 
 export const useOverlayStore = create<OverlayStore>()(
   persist(
-    immer((set, get) => ({
+    immer((set, _get) => ({
       isOpen: false,
       bounds: defaultBounds,
       activeTeamId: undefined,
       activeView: 'chat',
       sidebarCollapsed: false,
 
-      setOpen: (open) => set((state) => { state.isOpen = open; }),
-      toggle: () => set((state) => { state.isOpen = !state.isOpen; }),
-      setBounds: (bounds) => set((state) => { state.bounds = { ...state.bounds, ...bounds }; }),
-      setActiveTeam: (teamId) => set((state) => { state.activeTeamId = teamId; }),
-      setActiveView: (view) => set((state) => { state.activeView = view; }),
-      setSidebarCollapsed: (collapsed) => set((state) => { state.sidebarCollapsed = collapsed; }),
+      setOpen: (open) =>
+        set((state) => {
+          state.isOpen = open;
+        }),
+      toggle: () =>
+        set((state) => {
+          state.isOpen = !state.isOpen;
+        }),
+      setBounds: (bounds) =>
+        set((state) => {
+          state.bounds = { ...state.bounds, ...bounds };
+        }),
+      setActiveTeam: (teamId) =>
+        set((state) => {
+          state.activeTeamId = teamId;
+        }),
+      setActiveView: (view) =>
+        set((state) => {
+          state.activeView = view;
+        }),
+      setSidebarCollapsed: (collapsed) =>
+        set((state) => {
+          state.sidebarCollapsed = collapsed;
+        }),
 
       initialize: async () => {
         // Load persisted bounds from Tauri store if available
@@ -38,7 +56,9 @@ export const useOverlayStore = create<OverlayStore>()(
           const store = await Store.load('config.json');
           const savedBounds = await store.get('overlayBounds');
           if (savedBounds) {
-            set((state) => { state.bounds = { ...defaultBounds, ...savedBounds }; });
+            set((state) => {
+              state.bounds = { ...defaultBounds, ...savedBounds };
+            });
           }
         } catch {
           // Store not available, use defaults

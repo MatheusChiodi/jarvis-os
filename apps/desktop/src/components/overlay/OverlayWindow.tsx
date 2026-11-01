@@ -1,13 +1,14 @@
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Minimize, Maximize } from 'lucide-react';
 import { useOverlayStore } from '../../stores/overlayStore';
 import { useTeamsStore } from '../../stores/teamsStore';
-import { TeamsSidebar } from './TeamsSidebar';
 import { MainView } from './MainView';
 import { Statusline } from './Statusline';
+import { TeamsSidebar } from './TeamsSidebar';
 
 export function OverlayWindow() {
-  const { isOpen, bounds, setBounds, setOpen, activeView, sidebarCollapsed, toggleSidebar } = useOverlayStore();
+  const { isOpen, bounds, setBounds, setOpen, activeView, sidebarCollapsed, toggleSidebar } =
+    useOverlayStore();
   const { teams, activeTeamId } = useTeamsStore();
   const windowRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; y: number } | null>(null);
@@ -45,40 +46,41 @@ export function OverlayWindow() {
     document.removeEventListener('mouseup', handleMouseUp);
   };
 
-  const handleResize = (direction: 'se' | 'sw' | 'ne' | 'nw' | 'e' | 'w' | 's' | 'n') => (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startBounds = { ...bounds };
+  const handleResize =
+    (direction: 'se' | 'sw' | 'ne' | 'nw' | 'e' | 'w' | 's' | 'n') => (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startBounds = { ...bounds };
 
-    const doMove = (e: MouseEvent) => {
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      const newBounds = { ...startBounds };
+      const doMove = (e: MouseEvent) => {
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const newBounds = { ...startBounds };
 
-      if (direction.includes('e')) newBounds.width = Math.max(800, startBounds.width + dx);
-      if (direction.includes('w')) {
-        newBounds.width = Math.max(800, startBounds.width - dx);
-        newBounds.x = startBounds.x + (startBounds.width - newBounds.width);
-      }
-      if (direction.includes('s')) newBounds.height = Math.max(600, startBounds.height + dy);
-      if (direction.includes('n')) {
-        newBounds.height = Math.max(600, startBounds.height - dy);
-        newBounds.y = startBounds.y + (startBounds.height - newBounds.height);
-      }
+        if (direction.includes('e')) newBounds.width = Math.max(800, startBounds.width + dx);
+        if (direction.includes('w')) {
+          newBounds.width = Math.max(800, startBounds.width - dx);
+          newBounds.x = startBounds.x + (startBounds.width - newBounds.width);
+        }
+        if (direction.includes('s')) newBounds.height = Math.max(600, startBounds.height + dy);
+        if (direction.includes('n')) {
+          newBounds.height = Math.max(600, startBounds.height - dy);
+          newBounds.y = startBounds.y + (startBounds.height - newBounds.height);
+        }
 
-      setBounds(newBounds);
+        setBounds(newBounds);
+      };
+
+      const doUp = () => {
+        document.removeEventListener('mousemove', doMove);
+        document.removeEventListener('mouseup', doUp);
+      };
+
+      document.addEventListener('mousemove', doMove);
+      document.addEventListener('mouseup', doUp);
     };
-
-    const doUp = () => {
-      document.removeEventListener('mousemove', doMove);
-      document.removeEventListener('mouseup', doUp);
-    };
-
-    document.addEventListener('mousemove', doMove);
-    document.addEventListener('mouseup', doUp);
-  };
 
   return (
     <div
@@ -94,21 +96,47 @@ export function OverlayWindow() {
       <TitleBar onClose={() => setOpen(false)} />
       <div className="flex-1 flex overflow-hidden">
         {!sidebarCollapsed && <TeamsSidebar teams={teams} activeTeamId={activeTeamId} />}
-        <div className={`flex-1 flex flex-col transition-all duration-200 ${sidebarCollapsed ? 'ml-0' : 'ml-64'}`}>
+        <div
+          className={`flex-1 flex flex-col transition-all duration-200 ${sidebarCollapsed ? 'ml-0' : 'ml-64'}`}
+        >
           <MainView activeView={activeView} />
           <Statusline />
         </div>
       </div>
 
       {/* Resize handles */}
-      <div className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize resize-handle" onMouseDown={handleResize('se')} />
-      <div className="absolute bottom-0 left-0 w-4 h-4 cursor-sw-resize resize-handle" onMouseDown={handleResize('sw')} />
-      <div className="absolute top-0 right-0 w-4 h-4 cursor-ne-resize resize-handle" onMouseDown={handleResize('ne')} />
-      <div className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize resize-handle" onMouseDown={handleResize('nw')} />
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-8 cursor-e-resize resize-handle" onMouseDown={handleResize('e')} />
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-8 cursor-w-resize resize-handle" onMouseDown={handleResize('w')} />
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-2 cursor-s-resize resize-handle" onMouseDown={handleResize('s')} />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-2 cursor-n-resize resize-handle" onMouseDown={handleResize('n')} />
+      <div
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize resize-handle"
+        onMouseDown={handleResize('se')}
+      />
+      <div
+        className="absolute bottom-0 left-0 w-4 h-4 cursor-sw-resize resize-handle"
+        onMouseDown={handleResize('sw')}
+      />
+      <div
+        className="absolute top-0 right-0 w-4 h-4 cursor-ne-resize resize-handle"
+        onMouseDown={handleResize('ne')}
+      />
+      <div
+        className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize resize-handle"
+        onMouseDown={handleResize('nw')}
+      />
+      <div
+        className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-8 cursor-e-resize resize-handle"
+        onMouseDown={handleResize('e')}
+      />
+      <div
+        className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-8 cursor-w-resize resize-handle"
+        onMouseDown={handleResize('w')}
+      />
+      <div
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-2 cursor-s-resize resize-handle"
+        onMouseDown={handleResize('s')}
+      />
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-2 cursor-n-resize resize-handle"
+        onMouseDown={handleResize('n')}
+      />
     </div>
   );
 }
@@ -135,7 +163,11 @@ function TitleBar({ onClose }: { onClose: () => void }) {
           style={{ WebkitAppRegion: 'no-drag' }}
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {sidebarCollapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <ChevronLeft className="w-4 h-4" />
+          )}
         </button>
         <button
           onClick={onClose}

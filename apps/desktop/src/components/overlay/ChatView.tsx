@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Bot, User, Copy, Check, X } from 'lucide-react';
-import { useTeamsStore } from '../../stores/teamsStore';
-import { useOverlayStore } from '../../stores/overlayStore';
 import { invoke } from '@tauri-apps/api/core';
+import { Bot, Mic, Send } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useOverlayStore } from '../../stores/overlayStore';
+import { useTeamsStore } from '../../stores/teamsStore';
 
 interface Message {
   id: string;
@@ -22,7 +22,7 @@ export function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const team = teams.find(t => t.id === activeTeamId);
+  const team = teams.find((t) => t.id === activeTeamId);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,7 +36,7 @@ export function ChatView() {
       content: input.trim(),
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     const currentInput = input;
     setInput('');
     setIsLoading(true);
@@ -46,20 +46,26 @@ export function ChatView() {
         teamId: activeTeamId,
         message: currentInput,
       });
-      setMessages(prev => [...prev, {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-        agentId: 'planner',
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: response,
+          timestamp: new Date(),
+          agentId: 'planner',
+        },
+      ]);
     } catch (error) {
-      setMessages(prev => [...prev, {
-        id: crypto.randomUUID(),
-        role: 'system',
-        content: `Error: ${error}`,
-        timestamp: new Date(),
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'system',
+          content: `Error: ${error}`,
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +94,7 @@ export function ChatView() {
             <p className="text-xs mt-4 opacity-70">Team: {team?.name || 'None'}</p>
           </div>
         )}
-        {messages.map(msg => (
+        {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
         <div ref={messagesEndRef} />
@@ -140,13 +146,15 @@ function MessageBubble({ message }: { message: Message }) {
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl ${
-        isUser
-          ? 'bg-blue-600 text-white rounded-br-md'
-          : isError
-          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-bl-md'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md'
-      }`}>
+      <div
+        className={`max-w-[75%] px-4 py-2.5 rounded-2xl ${
+          isUser
+            ? 'bg-blue-600 text-white rounded-br-md'
+            : isError
+              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-bl-md'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md'
+        }`}
+      >
         {!isUser && message.agentId && (
           <div className="flex items-center gap-1.5 mb-1 text-xs opacity-70">
             <Bot className="w-3.5 h-3.5" />

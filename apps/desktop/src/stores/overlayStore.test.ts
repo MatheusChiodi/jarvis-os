@@ -1,15 +1,17 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useOverlayStore } from './overlayStore';
 
 // Mock Tauri store plugin
 vi.mock('@tauri-apps/plugin-store', () => ({
   Store: {
-    load: vi.fn(() => Promise.resolve({
-      get: vi.fn(() => Promise.resolve(null)),
-      set: vi.fn(),
-      save: vi.fn(),
-    })),
+    load: vi.fn(() =>
+      Promise.resolve({
+        get: vi.fn(() => Promise.resolve(null)),
+        set: vi.fn(),
+        save: vi.fn(),
+      })
+    ),
   },
 }));
 
@@ -111,7 +113,7 @@ describe('overlayStore', () => {
 
     it('should accept all valid view types', () => {
       const views = ['chat', 'terminal', 'plan', 'memory', 'settings'] as const;
-      views.forEach(view => {
+      views.forEach((view) => {
         act(() => {
           useOverlayStore.getState().setActiveView(view);
         });
@@ -141,7 +143,7 @@ describe('overlayStore', () => {
     it('should persist bounds, activeTeamId, activeView, sidebarCollapsed', () => {
       const store = useOverlayStore;
       const persistedKeys = store.persistOptions?.partialize?.(store.getState());
-      
+
       expect(persistedKeys).toHaveProperty('bounds');
       expect(persistedKeys).toHaveProperty('activeTeamId');
       expect(persistedKeys).toHaveProperty('activeView');

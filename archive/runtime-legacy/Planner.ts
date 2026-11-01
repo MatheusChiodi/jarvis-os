@@ -1,6 +1,6 @@
 import { generateId, nowISO } from '@jarvis-os/core';
-import type { Plan, PlanPhase, Task, Team } from '@jarvis-os/core';
-import { SkillRegistry } from '@jarvis-os/skills';
+import type { Plan, PlanPhase, Team } from '@jarvis-os/core';
+import type { SkillRegistry } from '@jarvis-os/skills';
 
 interface PlannerOptions {
   skillRegistry: SkillRegistry;
@@ -30,7 +30,7 @@ export class Planner {
     return plan;
   }
 
-  private async brainstorm(team: Team, goal: string): Promise<Spec> {
+  private async brainstorm(_team: Team, goal: string): Promise<Spec> {
     const brainstormingSkill = await this.skillRegistry.getSkill('super:brainstorming');
     if (!brainstormingSkill) {
       throw new Error('Brainstorming skill not available');
@@ -91,7 +91,11 @@ export class Planner {
         'OpenAPI spec is generated',
         'Rate limiting works correctly',
       ];
-    } else if (lowerGoal.includes('database') || lowerGoal.includes('schema') || lowerGoal.includes('migration')) {
+    } else if (
+      lowerGoal.includes('database') ||
+      lowerGoal.includes('schema') ||
+      lowerGoal.includes('migration')
+    ) {
       requirements = [
         'Database schema design',
         'Migration scripts',
@@ -109,19 +113,9 @@ export class Planner {
         'Seed data loads correctly',
       ];
     } else {
-      requirements = [
-        'Implement core functionality',
-        'Add tests',
-        'Document usage',
-      ];
-      constraints = [
-        'Follow existing code patterns',
-        'Maintain test coverage > 80%',
-      ];
-      acceptanceCriteria = [
-        'All tests pass',
-        'Feature works as described',
-      ];
+      requirements = ['Implement core functionality', 'Add tests', 'Document usage'];
+      constraints = ['Follow existing code patterns', 'Maintain test coverage > 80%'];
+      acceptanceCriteria = ['All tests pass', 'Feature works as described'];
     }
 
     return { goal, requirements, constraints, acceptanceCriteria };
@@ -172,7 +166,7 @@ export class Planner {
     }
 
     // Phase 2: Implementation
-    const implTasks = spec.requirements.slice(3).map((req, i) => ({
+    const implTasks = spec.requirements.slice(3).map((req, _i) => ({
       id: generateId(),
       teamId: team.id,
       title: req,
@@ -214,8 +208,12 @@ export class Planner {
           description: `Write tests for: ${criteria}`,
           status: 'pending' as const,
           assigneeRole: this.findBestRole(team, 'tester'),
-          dependencies: i > 0 ? [phases[2]?.tasks[i - 1]?.id || ''] : 
-            phases[1]?.tasks[phases[1].tasks.length - 1] ? [phases[1].tasks[phases[1].tasks.length - 1].id] : [],
+          dependencies:
+            i > 0
+              ? [phases[2]?.tasks[i - 1]?.id || '']
+              : phases[1]?.tasks[phases[1].tasks.length - 1]
+                ? [phases[1].tasks[phases[1].tasks.length - 1].id]
+                : [],
           createdAt: nowISO(),
           updatedAt: nowISO(),
         })),
@@ -234,7 +232,9 @@ export class Planner {
           description: 'Review all changes for quality and security',
           status: 'pending' as const,
           assigneeRole: this.findBestRole(team, 'reviewer'),
-          dependencies: phases[1]?.tasks[phases[1].tasks.length - 1] ? [phases[1].tasks[phases[1].tasks.length - 1].id] : [],
+          dependencies: phases[1]?.tasks[phases[1].tasks.length - 1]
+            ? [phases[1].tasks[phases[1].tasks.length - 1].id]
+            : [],
           createdAt: nowISO(),
           updatedAt: nowISO(),
         },
@@ -256,7 +256,7 @@ export class Planner {
   }
 
   private findBestRole(team: Team, preferredType: string): string {
-    const role = team.roles.find(r => r.type === preferredType);
+    const role = team.roles.find((r) => r.type === preferredType);
     if (role) return role.id;
 
     // Fallback to any role

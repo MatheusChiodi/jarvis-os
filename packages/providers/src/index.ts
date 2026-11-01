@@ -1,6 +1,6 @@
-import { OpenAI } from 'openai';
 import type { Config, ProviderConfig } from '@jarvis-os/protocol';
 import { validateConfig } from '@jarvis-os/protocol';
+import { OpenAI } from 'openai';
 import pino from 'pino';
 
 const logger = pino({ name: 'providers' });
@@ -58,24 +58,27 @@ export class ProviderRegistry {
 
   constructor(config: Config) {
     validateConfig(config);
-    
+
     for (const providerConfig of config.providers) {
       const apiKey = process.env[providerConfig.apiKeyEnv];
       const client = new OpenAI({
         baseURL: providerConfig.baseUrl,
         apiKey: apiKey || 'not-needed',
         defaultHeaders: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
-        dangerouslyAllowBrowser: false
+        dangerouslyAllowBrowser: false,
       });
 
       this.providers.set(providerConfig.id, {
         id: providerConfig.id,
         baseUrl: providerConfig.baseUrl,
         apiKey,
-        client
+        client,
       });
 
-      logger.info({ providerId: providerConfig.id, baseUrl: providerConfig.baseUrl }, 'Provider registered');
+      logger.info(
+        { providerId: providerConfig.id, baseUrl: providerConfig.baseUrl },
+        'Provider registered'
+      );
     }
 
     this.defaultRoute = config.routes.default;
@@ -97,16 +100,18 @@ export class ProviderRegistry {
     }
     return {
       providerId: ref.slice(0, colonIndex),
-      model: ref.slice(colonIndex + 1)
+      model: ref.slice(colonIndex + 1),
     };
   }
 
   resolveModel(routeKey: string): ModelRef[] {
     const route = this.routes.get(routeKey) || this.defaultRoute;
-    return route.map(ref => this.parseModelRef(ref));
+    return route.map((ref) => this.parseModelRef(ref));
   }
 
-  async *chatCompletion(options: ChatCompletionOptions): AsyncGenerator<StreamChunk, void, unknown> {
+  async *chatCompletion(
+    options: ChatCompletionOptions
+  ): AsyncGenerator<StreamChunk, void, unknown> {
     const modelRefs = this.resolveModel('default');
     let lastError: Error | null = null;
 
@@ -118,8 +123,11 @@ export class ProviderRegistry {
       }
 
       try {
-        logger.debug({ model: modelRef.model, provider: modelRef.providerId }, 'Attempting chat completion');
-        
+        logger.debug(
+          { model: modelRef.model, provider: modelRef.providerId },
+          'Attempting chat completion'
+        );
+
         const stream = await provider.client.chat.completions.create({
           model: modelRef.model,
           messages: options.messages,
@@ -127,23 +135,27 @@ export class ProviderRegistry {
           tool_choice: options.toolChoice,
           temperature: options.temperature ?? 0.7,
           max_tokens: options.maxTokens,
-          stream: true
+          stream: true,
         });
 
-        let accumulatedContent = '';
-        let accumulatedToolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] = [];
+        let _accumulatedContent = '';
+        const accumulatedToolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] = [];
 
         for await (const chunk of stream) {
           const delta = chunk.choices[0]?.delta;
           if (delta?.content) {
-            accumulatedContent += delta.content;
+            _accumulatedContent += delta.content;
             yield { content: delta.content, done: false };
           }
           if (delta?.tool_calls) {
             for (const tc of delta.tool_calls) {
               if (tc.index !== undefined) {
                 while (accumulatedToolCalls.length <= tc.index) {
-                  accumulatedToolCalls.push({ id: '', type: 'function', function: { name: '', arguments: '' } });
+                  accumulatedToolCalls.push({
+                    id: '',
+                    type: 'function',
+                    function: { name: '', arguments: '' },
+                  });
                 }
                 const existing = accumulatedToolCalls[tc.index];
                 if (existing) {
@@ -157,25 +169,33 @@ export class ProviderRegistry {
           }
         }
 
-        yield { 
-          content: '', 
-          toolCalls: accumulatedToolCalls.length > 0 ? accumulatedToolCalls : undefined, 
-          done: true 
+        yield {
+          content: '',
+          toolCalls: accumulatedToolCalls.length > 0 ? accumulatedToolCalls : undefined,
+          done: true,
         };
 
         return;
       } catch (error) {
         lastError = error as Error;
-        const isRetryable = error instanceof OpenAI.APIError && 
-          (error.status === 429 || error.status === 500 || error.status === 502 || error.status === 503 || error.status === 504);
-        
-        logger.warn({ 
-          providerId: modelRef.providerId, 
-          model: modelRef.model, 
-          error: lastError.message,
-          retryable: isRetryable
-        }, 'Provider error, trying next in fallback chain');
-        
+        const isRetryable =
+          error instanceof OpenAI.APIError &&
+          (error.status === 429 ||
+            error.status === 500 ||
+            error.status === 502 ||
+            error.status === 503 ||
+            error.status === 504);
+
+        logger.warn(
+          {
+            providerId: modelRef.providerId,
+            model: modelRef.model,
+            error: lastError.message,
+            retryable: isRetryable,
+          },
+          'Provider error, trying next in fallback chain'
+        );
+
         if (!isRetryable) {
           throw error;
         }
@@ -201,7 +221,7 @@ export class ProviderRegistry {
           tool_choice: options.toolChoice,
           temperature: options.temperature ?? 0.7,
           max_tokens: options.maxTokens,
-          stream: false
+          stream: false,
         });
 
         const choice = completion.choices[0];
@@ -211,17 +231,24 @@ export class ProviderRegistry {
         return {
           content: choice.message.content || '',
           toolCalls: choice.message.tool_calls,
-          usage: completion.usage ? {
-            promptTokens: completion.usage.prompt_tokens,
-            completionTokens: completion.usage.completion_tokens
-          } : undefined,
-          model: `${modelRef.providerId}:${modelRef.model}`
+          usage: completion.usage
+            ? {
+                promptTokens: completion.usage.prompt_tokens,
+                completionTokens: completion.usage.completion_tokens,
+              }
+            : undefined,
+          model: `${modelRef.providerId}:${modelRef.model}`,
         };
       } catch (error) {
         lastError = error as Error;
-        const isRetryable = error instanceof OpenAI.APIError && 
-          (error.status === 429 || error.status === 500 || error.status === 502 || error.status === 503 || error.status === 504);
-        
+        const isRetryable =
+          error instanceof OpenAI.APIError &&
+          (error.status === 429 ||
+            error.status === 500 ||
+            error.status === 502 ||
+            error.status === 503 ||
+            error.status === 504);
+
         if (!isRetryable) throw error;
       }
     }
@@ -230,10 +257,10 @@ export class ProviderRegistry {
   }
 
   listProviders(): ProviderConfig[] {
-    return Array.from(this.providers.values()).map(p => ({
+    return Array.from(this.providers.values()).map((p) => ({
       id: p.id,
       baseUrl: p.baseUrl,
-      apiKeyEnv: ''
+      apiKeyEnv: '',
     }));
   }
 }

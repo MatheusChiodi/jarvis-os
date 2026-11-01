@@ -1,8 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { Brain, X } from 'lucide-react';
-import { useOverlayStore } from '../../stores/overlayStore';
-import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { Brain } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { useOverlayStore } from '../../stores/overlayStore';
 
 export function FloatingButton() {
   const { isOpen, toggle, setOpen } = useOverlayStore();
@@ -24,7 +23,7 @@ export function FloatingButton() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => {
-      unlisten.then(fn => fn());
+      unlisten.then((fn) => fn());
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [toggle]);

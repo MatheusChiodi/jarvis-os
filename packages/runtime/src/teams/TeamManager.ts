@@ -1,5 +1,5 @@
 import { generateId, nowISO } from '@jarvis-os/core';
-import type { Team, AgentRole, AgentRoleType } from '@jarvis-os/core';
+import type { AgentRole, AgentRoleType, Team } from '@jarvis-os/core';
 
 export interface TeamManagerOptions {
   teamsPath: string;
@@ -7,10 +7,6 @@ export interface TeamManagerOptions {
 
 export class TeamManager {
   private teams: Map<string, Team> = new Map();
-
-  constructor(_options: TeamManagerOptions) {
-    // teamsPath kept for future Tauri store integration
-  }
 
   async loadTeams(): Promise<Team[]> {
     // In Tauri, load from store
@@ -28,9 +24,19 @@ export class TeamManager {
       description: 'Default team for general tasks',
       workingDir: process.cwd(),
       roles: [
-        { id: 'planner', name: 'Planner', type: 'planner', skills: ['super:brainstorming', 'super:writing-plans'] },
+        {
+          id: 'planner',
+          name: 'Planner',
+          type: 'planner',
+          skills: ['super:brainstorming', 'super:writing-plans'],
+        },
         { id: 'coder', name: 'Coder', type: 'coder', skills: ['ecc:tdd-workflow', 'matt:tdd'] },
-        { id: 'reviewer', name: 'Reviewer', type: 'reviewer', skills: ['ecc:code-review', 'matt:code-review'] },
+        {
+          id: 'reviewer',
+          name: 'Reviewer',
+          type: 'reviewer',
+          skills: ['ecc:code-review', 'matt:code-review'],
+        },
         { id: 'tester', name: 'Tester', type: 'tester', skills: ['ecc:e2e-testing'] },
       ],
       enabledSkills: [
@@ -105,7 +111,16 @@ export class TeamManager {
   }
 
   private validateRoles(roles: AgentRole[]): void {
-    const validTypes: AgentRoleType[] = ['planner', 'architect', 'coder', 'reviewer', 'tester', 'researcher', 'docs', 'custom'];
+    const validTypes: AgentRoleType[] = [
+      'planner',
+      'architect',
+      'coder',
+      'reviewer',
+      'tester',
+      'researcher',
+      'docs',
+      'custom',
+    ];
     const seenIds = new Set<string>();
 
     for (const role of roles) {
@@ -125,6 +140,6 @@ export class TeamManager {
   }
 }
 
-export function createTeamManager(options: TeamManagerOptions): TeamManager {
-  return new TeamManager(options);
+export function createTeamManager(_options: TeamManagerOptions): TeamManager {
+  return new TeamManager();
 }

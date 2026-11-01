@@ -51,9 +51,9 @@ describe('Hooks', () => {
 
       expect(result.success).toBe(true);
       expect(result.note).toBeDefined();
-      expect(result.note!.frontmatter.type).toBe('learning');
-      expect(result.note!.frontmatter.taskId).toBe('task-1');
-      expect(result.note!.frontmatter.agent).toBe('agent-1');
+      expect(result.note?.frontmatter.type).toBe('learning');
+      expect(result.note?.frontmatter.taskId).toBe('task-1');
+      expect(result.note?.frontmatter.agent).toBe('agent-1');
       expect(mockVault.saveNote).toHaveBeenCalled();
     });
 
@@ -88,9 +88,9 @@ describe('Hooks', () => {
 
       expect(result.success).toBe(true);
       expect(result.note).toBeDefined();
-      expect(result.note!.frontmatter.type).toBe('state');
-      expect(result.note!.frontmatter.agent).toBe('agent-1');
-      expect(result.note!.frontmatter.pinned).toBe(true);
+      expect(result.note?.frontmatter.type).toBe('state');
+      expect(result.note?.frontmatter.agent).toBe('agent-1');
+      expect(result.note?.frontmatter.pinned).toBe(true);
       expect(mockVault.saveNote).toHaveBeenCalled();
     });
 
@@ -127,9 +127,9 @@ describe('Hooks', () => {
 
       expect(result.success).toBe(true);
       expect(result.note).toBeDefined();
-      expect(result.note!.frontmatter.type).toBe('state');
-      expect(result.note!.frontmatter.taskId).toBe('task-1');
-      expect(result.note!.frontmatter.title).toContain('Task started');
+      expect(result.note?.frontmatter.type).toBe('state');
+      expect(result.note?.frontmatter.taskId).toBe('task-1');
+      expect(result.note?.frontmatter.title).toContain('Task started');
     });
 
     it('should handle missing taskId', async () => {
@@ -153,10 +153,10 @@ describe('Hooks', () => {
 
       expect(result.success).toBe(true);
       expect(result.note).toBeDefined();
-      expect(result.note!.frontmatter.type).toBe('decision');
-      expect(result.note!.frontmatter.title).toContain('OAuth2');
-      expect(result.note!.frontmatter.pinned).toBe(true);
-      expect(result.note!.content).toContain('More secure than custom auth');
+      expect(result.note?.frontmatter.type).toBe('decision');
+      expect(result.note?.frontmatter.title).toContain('OAuth2');
+      expect(result.note?.frontmatter.pinned).toBe(true);
+      expect(result.note?.content).toContain('More secure than custom auth');
     });
   });
 
@@ -175,10 +175,10 @@ describe('Hooks', () => {
 
       expect(result.success).toBe(true);
       expect(result.note).toBeDefined();
-      expect(result.note!.frontmatter.type).toBe('communication');
-      expect(result.note!.frontmatter.title).toContain('Code Review');
-      expect(result.note!.content).toContain('Please review the PR');
-      expect(result.note!.frontmatter.tags).toContain('agent-2');
+      expect(result.note?.frontmatter.type).toBe('communication');
+      expect(result.note?.frontmatter.title).toContain('Code Review');
+      expect(result.note?.content).toContain('Please review the PR');
+      expect(result.note?.frontmatter.tags).toContain('agent-2');
     });
   });
 

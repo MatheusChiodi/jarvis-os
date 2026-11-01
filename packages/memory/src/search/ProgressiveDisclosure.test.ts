@@ -199,7 +199,7 @@ describe('ProgressiveDisclosure', () => {
 
   describe('Utility Methods', () => {
     it('should get stats', async () => {
-      const mockStats = {
+      const _mockStats = {
         totalNotes: 10,
         notesByType: { memory: 5, decision: 3, learning: 2 },
         notesByAgent: { 'agent-1': 6, 'agent-2': 4 },
@@ -207,28 +207,26 @@ describe('ProgressiveDisclosure', () => {
       };
 
       vi.doMock('../vault/Vault', () => ({
-        listNotes: vi
-          .fn()
-          .mockResolvedValue([
-            {
-              frontmatter: {
-                id: '1',
-                type: 'memory',
-                title: 'Test',
-                summary: 'Test',
-                tags: [],
-                agent: 'agent-1',
-                project: 'test',
-                createdAt: '2024-01-01',
-                updatedAt: '2024-01-01',
-                wikilinks: [],
-                pinned: false,
-                archived: false,
-              },
-              content: 'Test',
-              path: '1.md',
+        listNotes: vi.fn().mockResolvedValue([
+          {
+            frontmatter: {
+              id: '1',
+              type: 'memory',
+              title: 'Test',
+              summary: 'Test',
+              tags: [],
+              agent: 'agent-1',
+              project: 'test',
+              createdAt: '2024-01-01',
+              updatedAt: '2024-01-01',
+              wikilinks: [],
+              pinned: false,
+              archived: false,
             },
-          ]),
+            content: 'Test',
+            path: '1.md',
+          },
+        ]),
       }));
 
       vi.doMock('./VectorIndex', () => ({
